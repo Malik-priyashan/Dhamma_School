@@ -3,6 +3,7 @@
 import { useRouter, usePathname } from "next/navigation";
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
+import { locales } from "../../config";
 export default function Header() {
   const router = useRouter();
   const locale = useLocale();
@@ -14,8 +15,23 @@ export default function Header() {
   }
 
   function changeLocale(next: string) {
-    // Navigate to selected locale (go to home)
-    router.push(`/${next}`);
+    // Replace the locale segment in the current pathname so user stays on the same page
+    try {
+      const path = pathname || '/';
+      const parts = path.split('/');
+
+      // If the first path segment is a known locale, replace it; otherwise insert it after root
+      if (parts[1] && (locales as readonly string[]).includes(parts[1])) {
+        parts[1] = next;
+      } else {
+        parts.splice(1, 0, next);
+      }
+
+      const newPath = parts.join('/') || `/${next}`;
+      router.push(newPath);
+    } catch (e) {
+      router.push(`/${next}`);
+    }
   }
 
   return (
@@ -30,9 +46,18 @@ export default function Header() {
               </div>
             </button>
 
+            <button
+              onClick={() => go('/prefect-board')}
+              aria-label={t('prefect_board')}
+              className="ml-2 md:hidden px-3 py-1 rounded-full text-sm text-slate-700 bg-white/90 shadow"
+            >
+              {t('prefect_board') || 'Prefect Board'}
+            </button>
+
             <ul className="hidden md:flex items-center text-sm text-slate-700 absolute left-1/2 transform -translate-x-1/2">
               {[
                 { path: '/', label: t('home') },
+                { path: '/prefect-board', label: t('prefect_board') || 'Prefect Board' },
                 { path: '/competitions', label: t('competitions') },
                 { path: '/gallery', label: t('gallery') },
               ].map(({ path, label }) => {
