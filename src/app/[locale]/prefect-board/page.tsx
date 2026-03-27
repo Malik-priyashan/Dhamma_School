@@ -1,5 +1,4 @@
 import PrefectBoardForm from '@/app/components/prefectboard/PrefectBoardForm';
-import { useLocale } from 'next-intl';
 
 export const metadata = {
   title: 'Prefect Board'

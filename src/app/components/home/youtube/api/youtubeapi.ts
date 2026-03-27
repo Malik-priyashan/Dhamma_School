@@ -7,7 +7,7 @@ export async function fetchYouTubeVideos(): Promise<Video[]> {
   const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
   const text = await res.text();
 
-  let data: any;
+  let data: unknown;
   try {
     data = JSON.parse(text);
   } catch {
@@ -15,11 +15,19 @@ export async function fetchYouTubeVideos(): Promise<Video[]> {
   }
 
   if (!res.ok) {
-    throw new Error(data?.error || `Request failed with status ${res.status}`);
+    let errMsg = `Request failed with status ${res.status}`;
+    if (typeof data === 'object' && data !== null) {
+      const obj = data as Record<string, unknown>;
+      if (typeof obj.error === 'string') errMsg = obj.error;
+    }
+    throw new Error(errMsg);
   }
 
-  if (Array.isArray(data)) return data;
-  if (data?.videos && Array.isArray(data.videos)) return data.videos;
+  if (Array.isArray(data)) return data as Video[];
+  if (typeof data === 'object' && data !== null) {
+    const obj = data as Record<string, unknown>;
+    if (Array.isArray(obj.videos)) return obj.videos as Video[];
+  }
 
   throw new Error('Unexpected response shape from backend');
 }

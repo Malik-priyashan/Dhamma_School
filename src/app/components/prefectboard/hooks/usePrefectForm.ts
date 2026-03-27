@@ -11,13 +11,14 @@ export function usePrefectForm(initial?: UsePrefectFormInitial) {
   const [data, setData] = useState<PrefectFormData>(() => {
     try {
       const raw = sessionStorage.getItem(storageKey);
-      const base = { fullNameEn: "", grade: "" } as any;
+      const base = { fullNameEn: "", grade: "" } as unknown as PrefectFormData;
       if (raw) {
-        const parsed = JSON.parse(raw);
-        return { ...base, ...(parsed.data ?? {}), ...initial } as any;
+        const parsed = JSON.parse(raw) as unknown;
+        const parsedData = (parsed && typeof parsed === 'object') ? (parsed as Record<string, unknown>)['data'] : undefined;
+        return { ...base, ...(parsedData ?? {}), ...initial } as PrefectFormData;
       }
-    } catch (e) {}
-    return { fullNameEn: "", grade: "", ...initial } as any;
+    } catch {}
+    return { fullNameEn: "", grade: "", ...initial } as PrefectFormData;
   });
 
   const [step, setStep] = useState<number>(() => {
@@ -27,18 +28,18 @@ export function usePrefectForm(initial?: UsePrefectFormInitial) {
         const parsed = JSON.parse(raw);
         return parsed.step ?? 1;
       }
-    } catch (e) {}
+    } catch {}
     return 1;
   });
 
-  function setField(key: keyof PrefectFormData | string, value: any) {
+  function setField(key: keyof PrefectFormData | string, value: unknown) {
     setData((s) => {
-      const next = { ...s, [key]: value } as any;
+      const next = { ...s, [key]: value } as PrefectFormData;
       try {
         const raw = sessionStorage.getItem(storageKey);
         const parsed = raw ? JSON.parse(raw) : {};
         sessionStorage.setItem(storageKey, JSON.stringify({ ...parsed, data: next, step }));
-      } catch (e) {}
+      } catch {}
       return next;
     });
   }
@@ -50,7 +51,7 @@ export function usePrefectForm(initial?: UsePrefectFormInitial) {
         const raw = sessionStorage.getItem(storageKey);
         const parsed = raw ? JSON.parse(raw) : {};
         sessionStorage.setItem(storageKey, JSON.stringify({ ...parsed, data, step: next }));
-      } catch (e) {}
+      } catch {}
       return next;
     });
   }
@@ -62,7 +63,7 @@ export function usePrefectForm(initial?: UsePrefectFormInitial) {
         const raw = sessionStorage.getItem(storageKey);
         const parsed = raw ? JSON.parse(raw) : {};
         sessionStorage.setItem(storageKey, JSON.stringify({ ...parsed, data, step: next }));
-      } catch (e) {}
+      } catch {}
       return next;
     });
   }
@@ -75,7 +76,7 @@ export function usePrefectForm(initial?: UsePrefectFormInitial) {
       const { registerPrefect } = await import('../api/prefectboardapi');
 
       // prepare payload: normalize years fields (comma separated) to number[]
-      const normalizeYears = (v: any) => {
+      const normalizeYears = (v: unknown) => {
         if (!v) return [];
         if (Array.isArray(v)) return v.map((x) => Number(x)).filter(Boolean);
         return String(v)
@@ -85,8 +86,8 @@ export function usePrefectForm(initial?: UsePrefectFormInitial) {
           .map((n) => Number(n));
       };
 
-      const toYesNo = (v: any) => {
-        const truthy = (val: any) => {
+      const toYesNo = (v: unknown) => {
+        const truthy = (val: unknown) => {
           if (typeof val === 'boolean') return val;
           if (!val) return false;
           const s = String(val).toLowerCase();
@@ -95,7 +96,7 @@ export function usePrefectForm(initial?: UsePrefectFormInitial) {
         return truthy(v) ? 'YES' : 'NO';
       };
 
-      const mapLibraryStatus = (v: any) => {
+      const mapLibraryStatus = (v: unknown) => {
         if (!v) return null;
         const s = String(v).toLowerCase();
         switch (s) {
@@ -112,13 +113,12 @@ export function usePrefectForm(initial?: UsePrefectFormInitial) {
         }
       };
 
-      const toNumberOrNull = (v: any) => {
+      const toNumberOrNull = (v: unknown) => {
         if (v === undefined || v === null || v === '') return null;
         const n = Number(v);
         return Number.isFinite(n) ? n : null;
       };
-
-      const payload: any = {
+      const payload: Record<string, unknown> = {
         fullNameEn: data.fullNameEn ?? '',
         fullNameSi: data.fullNameSi ?? null,
         addressEn: data.addressEn ?? null,
@@ -133,7 +133,7 @@ export function usePrefectForm(initial?: UsePrefectFormInitial) {
             const d = new Date(val);
             if (isNaN(d.getTime())) return null;
             return d.toISOString();
-          } catch (e) {
+          } catch {
             return null;
           }
         })(),
@@ -193,6 +193,8 @@ export function usePrefectForm(initial?: UsePrefectFormInitial) {
       // files: if a File was chosen and Cloudinary is configured, upload it to Cloudinary
       const teacherFile = data.teacherConfirmation;
 
+      let res: unknown;
+
       if (teacherFile instanceof File && CLOUDINARY_CLOUD_NAME && CLOUDINARY_UPLOAD_PRESET) {
         try {
           // derive uploader name from the first-name/fullname field (locale-aware)
@@ -233,28 +235,29 @@ export function usePrefectForm(initial?: UsePrefectFormInitial) {
           }
 
           // log payload for debugging
-          try { console.debug('Prefect payload (Cloudinary):', payload); } catch (e) {}
+          try { console.debug('Prefect payload (Cloudinary):', payload); } catch {}
 
           // debug log and call backend with JSON payload (no file)
-          try { console.debug('Submitting Prefect payload (Cloudinary):', payload, 'formDataFile:', teacherFile); } catch (e) {}
-          var res = await registerPrefect(payload);
-        } catch (e) {
-          // if cloud upload fails, rethrow to surface error to caller
-          throw e;
-        }
+          try { console.debug('Submitting Prefect payload (Cloudinary):', payload, 'formDataFile:', teacherFile); } catch {}
+          // assign into outer-scoped variable so it can be returned below
+          res = await registerPrefect(payload);
+        } catch (err) {
+            // if cloud upload fails, rethrow to surface error to caller
+            throw err;
+          }
       } else {
         // debug log then fallback: send file (if present) to backend which handles the upload/storage
-        try { console.debug('Submitting Prefect payload (fallback):', payload, 'file:', teacherFile); } catch (e) {}
-        var res = await registerPrefect(payload, teacherFile instanceof File ? teacherFile : null);
+        try { console.debug('Submitting Prefect payload (fallback):', payload, 'file:', teacherFile); } catch {}
+        res = await registerPrefect(payload, teacherFile instanceof File ? teacherFile : null);
       }
 
       try {
         sessionStorage.removeItem(storageKey);
-      } catch (e) {}
+      } catch {}
 
       return res;
-    } catch (e) {
-      throw e;
+    } catch (err) {
+      throw err;
     }
   }
 
@@ -263,29 +266,31 @@ export function usePrefectForm(initial?: UsePrefectFormInitial) {
       const raw = sessionStorage.getItem(storageKey);
       const parsed = raw ? JSON.parse(raw) : {};
       sessionStorage.setItem(storageKey, JSON.stringify({ ...parsed, data, step }));
-    } catch (e) {}
+    } catch {}
   }, [data, step]);
 
   function reset() {
     try {
       sessionStorage.removeItem(storageKey);
-    } catch (e) {}
-    const base = { fullNameEn: "", grade: "" } as any;
-    setData({ fullNameEn: "", grade: "", ...initial } as any);
+    } catch {}
+    setData({ fullNameEn: "", grade: "", ...initial } as PrefectFormData);
     setStep(1);
   }
 
   return { data, setField, step, next, prev, submit, setData, reset } as const;
 }
 
-export function useLocaleFieldsPrefect(data: any, onChange: (k: string, v: any) => void) {
+export function useLocaleFieldsPrefect(data: PrefectFormData, onChange: (k: string, v: unknown) => void) {
   const locale = useLocale();
 
-  const getLocaleValue = (enKey: string, siKey: string) => {
-    return locale === 'si' ? (data[siKey] ?? '') : (data[enKey] ?? '');
+  const getLocaleValue = (enKey: string, siKey: string): string => {
+    const val = locale === 'si' ? data[siKey] : data[enKey];
+    if (val === undefined || val === null) return '';
+    if (typeof val === 'string' || typeof val === 'number') return String(val);
+    return '';
   };
 
-  const setLocaleValue = (enKey: string, siKey: string, value: any) => {
+  const setLocaleValue = (enKey: string, siKey: string, value: unknown) => {
     const key = locale === 'si' ? siKey : enKey;
     onChange(key, value);
   };
@@ -293,7 +298,8 @@ export function useLocaleFieldsPrefect(data: any, onChange: (k: string, v: any) 
   return { locale, getLocaleValue, setLocaleValue } as const;
 }
 
-export function usePrefectFormUI({ data, step, setField, submit }: { data: any; step: number; setField: (k: string, v: any) => void; submit: () => Promise<any>; }) {
+export function usePrefectFormUI(args: { data: PrefectFormData; step: number; setField: (k: string | keyof PrefectFormData, v: unknown) => void; submit: () => Promise<unknown>; }) {
+  const { step, setField, submit } = args;
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -306,11 +312,11 @@ export function usePrefectFormUI({ data, step, setField, submit }: { data: any; 
 
   const percent = computeCompletion();
 
-  function onChange(k: any, v: any) {
+  function onChange(k: string | keyof PrefectFormData, v: unknown) {
     setField(k, v);
   }
 
-  async function handleSubmit(onSuccess?: () => void, onError?: (err: any) => void) {
+  async function handleSubmit(onSuccess?: () => void, onError?: (err: unknown) => Promise<void> | void) {
     setMessage(null);
     setLoading(true);
     try {
@@ -318,8 +324,13 @@ export function usePrefectFormUI({ data, step, setField, submit }: { data: any; 
       if (onSuccess) onSuccess();
       return res;
     } catch (err) {
-      setMessage((err as any)?.message || "Submission failed");
-      if (onError) onError(err);
+      // use helper to extract message safely
+      try { const { getErrorMessage } = await import('../../../../lib/errors');
+        setMessage(getErrorMessage(err));
+      } catch {
+        setMessage('Submission failed');
+      }
+      if (onError) await onError(err);
       throw err;
     } finally {
       setLoading(false);

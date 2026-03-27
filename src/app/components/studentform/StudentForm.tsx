@@ -15,7 +15,7 @@ export default function StudentForm() {
   const t = useTranslations();
   const locale = useLocale();
   const router = useRouter();
-  const { loading, message, showConfirm, setShowConfirm, setMessage, percent, onChange, handleSubmit } = useStudentFormUI({ data, step, setField, submit });
+  const { loading, message, showConfirm, setShowConfirm, percent, onChange, handleSubmit } = useStudentFormUI({ step, setField, submit });
   const [toast, setToast] = React.useState<{ show: boolean; message: string; type?: 'success' | 'error' }>({ show: false, message: '', type: 'success' });
 
   function validateStepFields(currentStep: number) {
@@ -75,10 +75,10 @@ export default function StudentForm() {
       </div>
 
       <div className="mb-6">
-        {step === 1 && <Step1 data={data} onChange={onChange} />}
-        {step === 2 && <Step2 data={data} onChange={onChange} />}
-        {step === 3 && <Step3 data={data} onChange={onChange} />}
-        {step === 4 && <Step4 data={data} onChange={onChange} />}
+        {step === 1 && <Step1 data={data} onChange={onChange as (k: keyof typeof data, v: unknown) => void} />}
+        {step === 2 && <Step2 data={data} onChange={onChange as (k: keyof typeof data, v: unknown) => void} />}
+        {step === 3 && <Step3 data={data} onChange={onChange as (k: keyof typeof data, v: unknown) => void} />}
+        {step === 4 && <Step4 data={data} onChange={onChange as (k: keyof typeof data, v: unknown) => void} />}
       </div>
 
       <div className="flex items-center justify-between">
@@ -90,23 +90,43 @@ export default function StudentForm() {
 
         <div>
           {step < 4 ? (
-              <button onClick={() => { if (validateStepFields(step)) next(); }} className="px-5 py-2 bg-sky-400 hover:bg-sky-500 text-white rounded-full shadow">{t('form.next')}</button>
-            ) : (
+            <button
+              onClick={() => { if (validateStepFields(step)) next(); }}
+              className="px-5 py-2 bg-sky-400 hover:bg-sky-500 text-white rounded-full shadow"
+            >
+              {t('form.next')}
+            </button>
+          ) : (
             <div>
-                <button
-                  disabled={loading}
-                  onClick={() => {
-                    if (!data.agreeToTerms) {
-                      setToast({ show: true, message: t('form.mustAgree'), type: 'error' });
-                      setTimeout(() => setToast({ show: false, message: '', type: 'error' }), 3000);
-                      return;
-                    }
-                    setShowConfirm(true);
-                  }}
-                  className={`px-5 py-2 rounded-full shadow ${loading ? 'bg-slate-300 text-slate-600' : 'bg-sky-400 text-white hover:bg-sky-500'}`}
-                >
-                  {loading ? t('form.submitting') || 'Submitting...' : t('form.submit')}
-                </button>
+              <button
+                onClick={async () => {
+                  try {
+                    await handleSubmit(
+                      () => {
+                        const toastMsg = t('form.toastSuccess') || 'Submitted';
+                        setToast({ show: true, message: toastMsg, type: 'success' });
+                        setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
+                        try { reset(); } catch {}
+                      },
+                      async (e) => {
+                        try {
+                          const { getErrorMessage } = await import('../../../lib/errors');
+                          setToast({ show: true, message: getErrorMessage(e) || t('form.submissionFailed') || 'Submission failed', type: 'error' });
+                        } catch {
+                          setToast({ show: true, message: t('form.submissionFailed') || 'Submission failed', type: 'error' });
+                        }
+                        setTimeout(() => setToast({ show: false, message: '', type: 'error' }), 3000);
+                      }
+                    );
+                  } catch (err) {
+                    console.error(err);
+                  }
+                }}
+                disabled={loading}
+                className={`px-5 py-2 rounded-full ${loading ? 'bg-slate-300 text-slate-600' : 'bg-sky-400 text-white hover:bg-sky-500'}`}
+              >
+                {loading ? (t('form.submitting') || 'Submitting...') : t('form.submit')}
+              </button>
               {message && (
                 <div className="mt-2 text-sm text-gray-700">{message}</div>
               )}
@@ -124,20 +144,24 @@ export default function StudentForm() {
               <button onClick={() => setShowConfirm(false)} className="px-4 py-2 mr-2 rounded-full border border-sky-300 text-sky-700 hover:bg-sky-50">{t('form.confirmNo')}</button>
               <button
                 onClick={async () => {
-                  try {
-                    await handleSubmit(() => {
-                      const toastMsg = t('form.toastSuccess') || 'Submitted';
-                      setToast({ show: true, message: toastMsg, type: 'success' });
-                      setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
-                      // reset form to first step and clear data
-                      try { reset(); } catch (e) {}
-                    }, (err) => {
-                      setToast({ show: true, message: (err as any)?.message || t('form.submissionFailed') || 'Submission failed', type: 'error' });
-                      setTimeout(() => setToast({ show: false, message: '', type: 'error' }), 3000);
-                    });
-                  } catch (e) {
-                    // message state is handled in hook; no-op here
-                  }
+                    try {
+                      await handleSubmit(() => {
+                        const toastMsg = t('form.toastSuccess') || 'Submitted';
+                        setToast({ show: true, message: toastMsg, type: 'success' });
+                        setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
+                        // reset form to first step and clear data
+                        try { reset(); } catch {}
+                      }, async (e) => {
+                        try { const { getErrorMessage } = await import('../../../lib/errors');
+                          setToast({ show: true, message: getErrorMessage(e) || t('form.submissionFailed') || 'Submission failed', type: 'error' });
+                        } catch {
+                          setToast({ show: true, message: t('form.submissionFailed') || 'Submission failed', type: 'error' });
+                        }
+                        setTimeout(() => setToast({ show: false, message: '', type: 'error' }), 3000);
+                      });
+                    } catch {
+                      // message state is handled in hook; no-op here
+                    }
                 }}
                 disabled={loading}
                 className={`px-4 py-2 rounded-full ${loading ? 'bg-slate-300 text-slate-600' : 'bg-sky-400 text-white hover:bg-sky-500'}`}

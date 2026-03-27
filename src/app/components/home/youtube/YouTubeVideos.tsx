@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { fetchYouTubeVideos } from './api/youtubeapi';
 
@@ -70,9 +71,11 @@ export default function YouTubeVideos() {
                     className="group text-left w-full rounded-xl overflow-hidden bg-white/80 backdrop-blur-sm shadow-md hover:shadow-xl transform hover:-translate-y-1 transition-all duration-200"
                   >
                     <div className="relative w-full">
-                      <img
+                      <Image
                         src={`https://i.ytimg.com/vi/${v.id}/hqdefault.jpg`}
                         alt={v.title || 'Video thumbnail'}
+                        width={1280}
+                        height={720}
                         className="w-full h-56 object-cover"
                       />
                       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">

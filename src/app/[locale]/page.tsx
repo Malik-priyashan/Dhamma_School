@@ -1,12 +1,11 @@
 "use client";
 
-import { useMessages } from "next-intl";
+// messages not needed here
 import HeroCarousel from "../components/home/HeroCarousel";
 import Hero from "../components/home/Hero";
 import YouTubeVideos from "../components/home/youtube/YouTubeVideos";
 
 export default function LocalePage() {
-  const messages = useMessages();
 
   return (
     <div className="flex flex-col min-h-screen items-center justify-start bg-white font-sans">

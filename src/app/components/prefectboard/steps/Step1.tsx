@@ -7,7 +7,7 @@ import { StepProps } from "../types";
 
 export default function Step1({ data, onChange }: StepProps) {
   const t = useTranslations();
-  const { locale, getLocaleValue, setLocaleValue } = useLocaleFieldsPrefect(data, onChange);
+  const { getLocaleValue, setLocaleValue } = useLocaleFieldsPrefect(data, onChange);
 
   return (
     <div className="bg-white rounded-lg p-6 shadow-sm">

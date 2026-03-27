@@ -1,13 +1,13 @@
 "use client";
 
 import React from "react";
-import { useTranslations, useLocale } from "next-intl";
+import { useTranslations } from "next-intl";
 import { useLocaleFieldsPrefect } from "../hooks/usePrefectForm";
 import { StepProps } from "../types";
 
 export default function Step2({ data, onChange }: StepProps) {
   const t = useTranslations();
-  const locale = useLocale();
+  
 
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
   const initialFileName = (() => {
@@ -27,7 +27,7 @@ export default function Step2({ data, onChange }: StepProps) {
         const url = URL.createObjectURL(f as File);
         setPreviewUrl(url);
         return () => URL.revokeObjectURL(url);
-      } catch (e) {
+      } catch {
         setPreviewUrl(null);
       }
     } else if (typeof data.teacherConfirmation === 'string') {
@@ -202,6 +202,7 @@ export default function Step2({ data, onChange }: StepProps) {
         </div>
         {previewUrl && (
           <div className="mt-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={previewUrl} alt="preview" className="w-36 h-24 object-cover rounded-md border" />
           </div>
         )}

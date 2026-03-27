@@ -29,7 +29,7 @@ export default function Header() {
 
       const newPath = parts.join('/') || `/${next}`;
       router.push(newPath);
-    } catch (e) {
+    } catch {
       router.push(`/${next}`);
     }
   }

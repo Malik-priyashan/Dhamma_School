@@ -16,8 +16,8 @@ export function useStudentForm(initial?: Partial<StudentDTO>) {
         const parsed = JSON.parse(raw);
         return { ...base, ...(parsed.data ?? {}), ...initial } as StudentDTO;
       }
-    } catch (e) {
-      // ignore
+    } catch {
+      // ignore initialization errors
     }
     return { fullNameWithSurnameEn: "", agreeToTerms: false, ...initial } as StudentDTO;
   });
@@ -29,7 +29,7 @@ export function useStudentForm(initial?: Partial<StudentDTO>) {
         const parsed = JSON.parse(raw);
         return parsed.step ?? 1;
       }
-    } catch (e) {
+    } catch {
       // ignore
     }
     return 1;
@@ -42,7 +42,7 @@ export function useStudentForm(initial?: Partial<StudentDTO>) {
         const raw = sessionStorage.getItem(storageKey);
         const parsed = raw ? JSON.parse(raw) : {};
         sessionStorage.setItem(storageKey, JSON.stringify({ ...parsed, data: next, step }));
-      } catch (e) {}
+      } catch {}
       return next;
     });
   }
@@ -54,7 +54,7 @@ export function useStudentForm(initial?: Partial<StudentDTO>) {
         const raw = sessionStorage.getItem(storageKey);
         const parsed = raw ? JSON.parse(raw) : {};
         sessionStorage.setItem(storageKey, JSON.stringify({ ...parsed, data, step: next }));
-      } catch (e) {}
+      } catch {}
       return next;
     });
   }
@@ -66,7 +66,7 @@ export function useStudentForm(initial?: Partial<StudentDTO>) {
         const raw = sessionStorage.getItem(storageKey);
         const parsed = raw ? JSON.parse(raw) : {};
         sessionStorage.setItem(storageKey, JSON.stringify({ ...parsed, data, step: next }));
-      } catch (e) {}
+      } catch {}
       return next;
     });
   }
@@ -82,44 +82,42 @@ export function useStudentForm(initial?: Partial<StudentDTO>) {
     const si = data.emergencyMedicineSi ?? '';
     const combined = [en, si].filter((s) => !!s).join(' | ');
 
-    const payload: any = { ...data, medicine: combined };
+    const payload = { ...data, medicine: combined } as StudentDTO;
 
-    console.log("Submitting Student payload:", payload);
     try {
       const res = await registerStudent(payload);
       try {
         sessionStorage.removeItem(storageKey);
-      } catch (e) {}
+      } catch {}
       return res;
-    } catch (e) {
-      console.error("Failed to submit student:", e);
-      throw e;
+    } catch (err) {
+      console.error("Failed to submit student:", err);
+      throw err;
     }
   }
 
   function reset() {
     try {
       sessionStorage.removeItem(storageKey);
-    } catch (e) {}
-    const base = { fullNameWithSurnameEn: "", agreeToTerms: false } as Partial<StudentDTO>;
+    } catch {}
     setData({ fullNameWithSurnameEn: "", agreeToTerms: false, ...initial } as StudentDTO);
     setStep(1);
   }
 
   // sync storage when data or step change (catch cases not covered above)
   useEffect(() => {
-    try {
-      const raw = sessionStorage.getItem(storageKey);
-      const parsed = raw ? JSON.parse(raw) : {};
-      sessionStorage.setItem(storageKey, JSON.stringify({ ...parsed, data, step }));
-    } catch (e) {}
+      try {
+        const raw = sessionStorage.getItem(storageKey);
+        const parsed = raw ? JSON.parse(raw) : {};
+        sessionStorage.setItem(storageKey, JSON.stringify({ ...parsed, data, step }));
+      } catch {}
   }, [data, step]);
 
   return { data, setField, step, next, prev, submit, setData, reset } as const;
 }
 
 // UI helpers previously in separate files
-export function useLocaleFields(data: StudentDTO, onChange: (k: keyof StudentDTO, v: any) => void) {
+export function useLocaleFields(data: StudentDTO, onChange: (k: keyof StudentDTO, v: unknown) => void) {
   const locale = useLocale();
 
   const getLocaleValue = (enKey: keyof StudentDTO, siKey: keyof StudentDTO) => {
@@ -127,7 +125,7 @@ export function useLocaleFields(data: StudentDTO, onChange: (k: keyof StudentDTO
     return typeof val === 'string' ? val : String(val ?? '');
   };
 
-  const setLocaleValue = (enKey: keyof StudentDTO, siKey: keyof StudentDTO, value: any) => {
+  const setLocaleValue = (enKey: keyof StudentDTO, siKey: keyof StudentDTO, value: unknown) => {
     const key = locale === 'si' ? siKey : enKey;
     onChange(key, value);
   };
@@ -135,13 +133,13 @@ export function useLocaleFields(data: StudentDTO, onChange: (k: keyof StudentDTO
   return { locale, getLocaleValue, setLocaleValue } as const;
 }
 
-export function useSiblings(data: StudentDTO, onChange: (k: keyof StudentDTO, v: any) => void) {
+export function useSiblings(data: StudentDTO, onChange: (k: keyof StudentDTO, v: unknown) => void) {
   function setSiblings(next: Sibling[]) {
-    onChange('siblings' as any, next);
+    onChange('siblings' as keyof StudentDTO, next);
   }
 
   function addSibling() {
-    const next = [...(data.siblings ?? []), { nameEn: '', nameSi: '', gradeEn: '', gradeSi: '' } as any];
+    const next = [...(data.siblings ?? []), { nameEn: '', nameSi: '', gradeEn: '', gradeSi: '' } as Sibling];
     setSiblings(next);
   }
 
@@ -150,18 +148,18 @@ export function useSiblings(data: StudentDTO, onChange: (k: keyof StudentDTO, v:
     setSiblings(next);
   }
 
-  function updateSibling(idx: number, field: keyof Sibling, value: any) {
+  function updateSibling(idx: number, field: keyof Sibling, value: unknown) {
     const arr = [...(data.siblings ?? [])];
-    const item = { ...(arr[idx] || {}) } as any;
-    item[field] = value;
-    arr[idx] = item;
+    const item = { ...(arr[idx] || {}) } as Record<string, unknown>;
+    item[String(field)] = value;
+    arr[idx] = item as unknown as Sibling;
     setSiblings(arr);
   }
 
   return { setSiblings, addSibling, removeSibling, updateSibling } as const;
 }
 
-export function useStudentFormUI({ data, step, setField, submit }: { data: StudentDTO; step: number; setField: (k: keyof StudentDTO, v: any) => void; submit: () => Promise<any>; }) {
+export function useStudentFormUI({ step, setField, submit }: { step: number; setField: <K extends keyof StudentDTO>(k: K, v: StudentDTO[K]) => void; submit: () => Promise<unknown>; }) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -174,11 +172,11 @@ export function useStudentFormUI({ data, step, setField, submit }: { data: Stude
 
   const percent = computeCompletion();
 
-  function onChange(k: any, v: any) {
+  function onChange<K extends keyof StudentDTO>(k: K, v: StudentDTO[K]) {
     setField(k, v);
   }
 
-  async function handleSubmit(onSuccess?: () => void, onError?: (err: any) => void) {
+  async function handleSubmit(onSuccess?: () => void, onError?: (err: unknown) => void) {
     setMessage(null);
     setLoading(true);
     try {
@@ -186,7 +184,11 @@ export function useStudentFormUI({ data, step, setField, submit }: { data: Stude
       if (onSuccess) onSuccess();
       return res;
     } catch (err) {
-      setMessage((err as any)?.message || "Submission failed");
+      try { const { getErrorMessage } = await import('../../../../lib/errors');
+        setMessage(getErrorMessage(err));
+      } catch {
+        setMessage('Submission failed');
+      }
       if (onError) onError(err);
       throw err;
     } finally {

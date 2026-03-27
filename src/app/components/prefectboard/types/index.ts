@@ -65,12 +65,12 @@ export interface PrefectFormData {
   specialNoteSi?: string;
 
   // allow additional arbitrary fields
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export type StepProps = {
   data: PrefectFormData;
-  onChange: (key: keyof PrefectFormData | string, value: any) => void;
+  onChange: (key: keyof PrefectFormData | string, value: unknown) => void;
 };
 
 export type UsePrefectFormInitial = Partial<PrefectFormData>;

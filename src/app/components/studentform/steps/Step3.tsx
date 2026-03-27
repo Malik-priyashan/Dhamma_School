@@ -1,11 +1,11 @@
 "use client";
 
 import React from "react";
-import { StudentDTO, Sibling } from "../types/types";
+import { StudentDTO } from "../types/types";
 import { useTranslations } from "next-intl";
 import { useLocaleFields, useSiblings } from "../hooks/useStudentForm";
 
-export default function Step3({ data, onChange }: { data: StudentDTO; onChange: (k: keyof StudentDTO, v: any) => void; }) {
+export default function Step3({ data, onChange }: { data: StudentDTO; onChange: (k: keyof StudentDTO, v: unknown) => void; }) {
   const t = useTranslations();
   const { locale, getLocaleValue, setLocaleValue } = useLocaleFields(data, onChange);
   const { addSibling, removeSibling, updateSibling } = useSiblings(data, onChange);
@@ -15,7 +15,7 @@ export default function Step3({ data, onChange }: { data: StudentDTO; onChange: 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <label className="block">
           <span className="text-sm font-medium text-black">{t('form.emergencyContact')}<span className="text-red-500 ml-1">*</span></span>
-          <input required aria-required="true" value={getLocaleValue('emergencyPersonNameEn' as any, 'emergencyPersonNameSi' as any)} onChange={(e) => setLocaleValue('emergencyPersonNameEn' as any, 'emergencyPersonNameSi' as any, e.target.value)} placeholder={t('form.emergencyContact')}
+          <input required aria-required="true" value={getLocaleValue('emergencyPersonNameEn' as keyof StudentDTO, 'emergencyPersonNameSi' as keyof StudentDTO)} onChange={(e) => setLocaleValue('emergencyPersonNameEn' as keyof StudentDTO, 'emergencyPersonNameSi' as keyof StudentDTO, e.target.value)} placeholder={t('form.emergencyContact')}
             className="mt-1 block w-full rounded-lg border border-black px-3 py-3 shadow-sm bg-white text-black" />
         </label>
 
@@ -28,14 +28,14 @@ export default function Step3({ data, onChange }: { data: StudentDTO; onChange: 
 
       <label className="block">
         <span className="text-sm font-medium text-black">{t('form.emergencyContact') + ' ' + t('form.address')}</span>
-        <input value={getLocaleValue('emergencyPersonAddressEn' as any, 'emergencyPersonAddressSi' as any)} onChange={(e) => setLocaleValue('emergencyPersonAddressEn' as any, 'emergencyPersonAddressSi' as any, e.target.value)} placeholder={t('form.emergencyContact')}
+          <input value={getLocaleValue('emergencyPersonAddressEn' as keyof StudentDTO, 'emergencyPersonAddressSi' as keyof StudentDTO)} onChange={(e) => setLocaleValue('emergencyPersonAddressEn' as keyof StudentDTO, 'emergencyPersonAddressSi' as keyof StudentDTO, e.target.value)} placeholder={t('form.emergencyContact')}
           className="mt-1 block w-full rounded-lg border border-black px-3 py-3 shadow-sm bg-white text-black" />
       </label>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
         <label className="block">
           <span className="text-sm font-medium text-black">{t('form.disabilities')}</span>
-          <select value={data.disabilities ?? 'NO'} onChange={(e) => onChange('disabilities' as any, e.target.value)} className="mt-1 block w-full rounded-lg border border-black px-3 py-2 shadow-sm bg-white text-black">
+          <select value={data.disabilities ?? 'NO'} onChange={(e) => onChange('disabilities', e.target.value)} className="mt-1 block w-full rounded-lg border border-black px-3 py-2 shadow-sm bg-white text-black">
             <option value="NO">{t('form.earlierSchoolNo')}</option>
             <option value="YES">{t('form.earlierSchoolYes')}</option>
           </select>
@@ -43,7 +43,7 @@ export default function Step3({ data, onChange }: { data: StudentDTO; onChange: 
 
         <label className="block">
           <span className="text-sm font-medium text-black">{t('form.medicated')}</span>
-          <select value={data.medicated ?? 'NO'} onChange={(e) => onChange('medicated' as any, e.target.value)} className="mt-1 block w-full rounded-lg border border-black px-3 py-2 shadow-sm bg-white text-black">
+          <select value={data.medicated ?? 'NO'} onChange={(e) => onChange('medicated', e.target.value)} className="mt-1 block w-full rounded-lg border border-black px-3 py-2 shadow-sm bg-white text-black">
             <option value="NO">{t('form.earlierSchoolNo')}</option>
             <option value="YES">{t('form.earlierSchoolYes')}</option>
           </select>
@@ -51,7 +51,7 @@ export default function Step3({ data, onChange }: { data: StudentDTO; onChange: 
 
         <label className="block">
           <span className="text-sm font-medium text-black">{t('form.emergencyMedicine')}</span>
-          <input value={getLocaleValue('emergencyMedicineEn' as any, 'emergencyMedicineSi' as any)} onChange={(e) => setLocaleValue('emergencyMedicineEn' as any, 'emergencyMedicineSi' as any, e.target.value)} placeholder={t('form.emergencyMedicine')}
+          <input value={getLocaleValue('emergencyMedicineEn' as keyof StudentDTO, 'emergencyMedicineSi' as keyof StudentDTO)} onChange={(e) => setLocaleValue('emergencyMedicineEn' as keyof StudentDTO, 'emergencyMedicineSi' as keyof StudentDTO, e.target.value)} placeholder={t('form.emergencyMedicine')}
             className="mt-1 block w-full rounded-lg border border-black px-3 py-3 shadow-sm bg-white text-black" />
         </label>
       </div>
@@ -59,7 +59,7 @@ export default function Step3({ data, onChange }: { data: StudentDTO; onChange: 
         {data.disabilities === 'YES' && (
         <label className="block">
           <span className="text-sm font-medium text-black">{t('form.disabilityReason')}</span>
-          <input value={getLocaleValue('disabilityReasonEn' as any, 'disabilityReasonSi' as any)} onChange={(e) => setLocaleValue('disabilityReasonEn' as any, 'disabilityReasonSi' as any, e.target.value)} placeholder={t('form.disabilityReason')}
+          <input value={getLocaleValue('disabilityReasonEn' as keyof StudentDTO, 'disabilityReasonSi' as keyof StudentDTO)} onChange={(e) => setLocaleValue('disabilityReasonEn' as keyof StudentDTO, 'disabilityReasonSi' as keyof StudentDTO, e.target.value)} placeholder={t('form.disabilityReason')}
             className="mt-1 block w-full rounded-lg border border-black px-3 py-3 shadow-sm bg-white text-black" />
         </label>
       )}

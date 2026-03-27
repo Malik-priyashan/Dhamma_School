@@ -11,7 +11,7 @@ import { useRouter } from "next/navigation";
 
 export default function PrefectBoardForm() {
   const t = useTranslations();
-  const { data, setField, step, next, prev, submit, setData, reset } = usePrefectForm();
+  const { data, setField, step, next, prev, submit, reset } = usePrefectForm();
   const ui = usePrefectFormUI({ data, step, setField, submit });
   const locale = useLocale();
   const router = useRouter();
@@ -56,15 +56,19 @@ export default function PrefectBoardForm() {
   async function onSubmit(e?: React.FormEvent) {
     e?.preventDefault();
       try {
-      await ui.handleSubmit(() => {
-        const toastMsg = t('prefect_board_submitted') || 'Submitted';
-        setToast({ show: true, message: toastMsg, type: 'success' });
-        setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
-        try { reset(); } catch (e) {}
-      }, (err) => {
-        setToast({ show: true, message: (err as any)?.message || 'Submission failed', type: 'error' });
-        setTimeout(() => setToast({ show: false, message: '', type: 'error' }), 3000);
-      });
+          await ui.handleSubmit(() => {
+            const toastMsg = t('prefect_board_submitted') || 'Submitted';
+            setToast({ show: true, message: toastMsg, type: 'success' });
+            setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
+            try { reset(); } catch {}
+          }, async (e) => {
+            try { const { getErrorMessage } = await import('../../../lib/errors');
+              setToast({ show: true, message: getErrorMessage(e), type: 'error' });
+            } catch {
+              setToast({ show: true, message: 'Submission failed', type: 'error' });
+            }
+            setTimeout(() => setToast({ show: false, message: '', type: 'error' }), 3000);
+          });
     } catch (err) {
       console.error(err);
     }
@@ -150,12 +154,16 @@ export default function PrefectBoardForm() {
                         const toastMsg = t('prefect_board_submitted') || 'Submitted';
                         setToast({ show: true, message: toastMsg, type: 'success' });
                         setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
-                        try { reset(); } catch (e) {}
-                      }, (err) => {
-                        setToast({ show: true, message: (err as any)?.message || 'Submission failed', type: 'error' });
+                        try { reset(); } catch {}
+                      }, async (e) => {
+                        try { const { getErrorMessage } = await import('../../../lib/errors');
+                          setToast({ show: true, message: getErrorMessage(e) || 'Submission failed', type: 'error' });
+                        } catch {
+                          setToast({ show: true, message: 'Submission failed', type: 'error' });
+                        }
                         setTimeout(() => setToast({ show: false, message: '', type: 'error' }), 3000);
                       });
-                    } catch (e) {
+                    } catch {
                       // handled in hook
                     }
                   }}

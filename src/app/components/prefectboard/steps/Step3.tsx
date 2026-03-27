@@ -13,7 +13,7 @@ export default function Step3({ data, onChange }: StepProps) {
     const val = type === 'checkbox' ? checked : value;
     onChange(name, val);
   }
-  const { locale, getLocaleValue, setLocaleValue } = useLocaleFieldsPrefect(data, onChange);
+  const { getLocaleValue, setLocaleValue } = useLocaleFieldsPrefect(data, onChange);
 
   return (
     <div className="bg-white rounded-lg p-6 shadow-sm space-y-4">
