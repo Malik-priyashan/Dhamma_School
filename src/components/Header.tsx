@@ -1,13 +1,25 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
+import { getUserRole } from "../lib/authUtils";
+
 export default function Header() {
   const router = useRouter();
   const locale = useLocale();
   const t = useTranslations();
   const pathname = usePathname();
+  const [userRole, setUserRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      Promise.resolve().then(() => {
+        setUserRole(getUserRole());
+      });
+    }
+  }, [pathname]);
 
   function go(path: string) {
     router.push(`/${locale}${path}`);
@@ -30,12 +42,23 @@ export default function Header() {
               </div>
             </button>
 
+            <button
+              onClick={() => go('/prefect-board')}
+              aria-label={t('prefect_board')}
+              className={`ml-2 md:hidden ${userRole === 'STUDENT' ? 'inline-block' : 'hidden'} px-3 py-1 rounded-full text-sm text-slate-700 bg-white/90 shadow`}
+            >
+              {t('prefect_board')}
+            </button>
+
             <ul className="hidden md:flex items-center text-sm text-slate-700 absolute left-1/2 transform -translate-x-1/2">
               {[
                 { path: '/', label: t('home') },
-                { path: '/competitions', label: t('competitions') },
-                { path: '/gallery', label: t('gallery') },
-              ].map(({ path, label }) => {
+                { path: '/prefect-board', label: t('prefect_board') || 'Prefect Board', studentOnly: true },
+                { path: '/announcing', label: t('announcing') || 'Announcing', studentOnly: true },
+                { path: '/gallery', label: t('gallery'), studentOnly: true },
+              ]
+              .filter(link => !link.studentOnly || userRole === 'STUDENT')
+              .map(({ path, label }) => {
                 const base = path === '/' ? `/${locale}` : `/${locale}${path}`;
                 const isActive = pathname === base || pathname?.startsWith(base + '/');
 

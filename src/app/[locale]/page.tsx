@@ -1,11 +1,22 @@
 "use client";
 
-import { useMessages } from "next-intl";
-import HeroCarousel from "../../components/home/HeroCarousel";
-import Hero from "../../components/home/Hero";
+// messages not needed here
+import HeroCarousel from "../features/home/HeroCarousel";
+import Hero from "../features/home/Hero";
+import YouTubeVideos from "../features/home/YouTubeVideos";
+import { useEffect, useState } from "react";
+import { getUserRole } from "../../lib/authUtils";
 
 export default function LocalePage() {
-  const messages = useMessages();
+  const [userRole, setUserRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      Promise.resolve().then(() => {
+        setUserRole(getUserRole());
+      });
+    }
+  }, []);
 
   return (
     <div className="flex flex-col min-h-screen items-center justify-start bg-white font-sans">
@@ -19,11 +30,15 @@ export default function LocalePage() {
 
       {/* Constrained content */}
       <main className="w-full max-w-6xl py-8 px-6">
-        <section id="about" className="mt-8 bg-white rounded-lg p-6 shadow-sm">
-          <h1 className="text-3xl font-semibold mb-2">{messages?.welcome_school ?? "..."}</h1>
-          <p className="text-slate-600">{messages?.subheading ?? ''}</p>
-        </section>
+        {/* Constrained content (other sections can go here) */}
       </main>
+
+      {/* Videos section should span full width */}
+      {userRole === 'STUDENT' && (
+        <div className="w-full">
+          <YouTubeVideos />
+        </div>
+      )}
     </div>
   );
 }
