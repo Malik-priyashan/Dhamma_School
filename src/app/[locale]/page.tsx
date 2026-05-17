@@ -1,11 +1,22 @@
 "use client";
 
 // messages not needed here
-import HeroCarousel from "../components/home/HeroCarousel";
-import Hero from "../components/home/Hero";
-import YouTubeVideos from "../components/home/youtube/YouTubeVideos";
+import HeroCarousel from "../features/home/HeroCarousel";
+import Hero from "../features/home/Hero";
+import YouTubeVideos from "../features/home/YouTubeVideos";
+import { useEffect, useState } from "react";
+import { getUserRole } from "../../lib/authUtils";
 
 export default function LocalePage() {
+  const [userRole, setUserRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      Promise.resolve().then(() => {
+        setUserRole(getUserRole());
+      });
+    }
+  }, []);
 
   return (
     <div className="flex flex-col min-h-screen items-center justify-start bg-white font-sans">
@@ -23,9 +34,11 @@ export default function LocalePage() {
       </main>
 
       {/* Videos section should span full width */}
-      <div className="w-full">
-        <YouTubeVideos />
-      </div>
+      {userRole === 'STUDENT' && (
+        <div className="w-full">
+          <YouTubeVideos />
+        </div>
+      )}
     </div>
   );
 }

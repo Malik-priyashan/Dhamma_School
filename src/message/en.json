@@ -7,9 +7,7 @@
   "scroll_down": "Scroll down",
   "dhamma_school": "Dhamma School",
   "home": "Home",
-  "competitions": "Competitions",
-  "gallery": "Gallery"
-  ,
+  "gallery": "Gallery",
   "prefect_board": "Prefect Board"
   ,
   "prefect_board_title": "Prefect Board Application",
@@ -32,6 +30,7 @@
     "step2": "Education & Address",
     "step3": "Emergency & Terms",
     "fullName": "Full name",
+    "grade": "Grade",
     "dob": "Date of birth",
     "phone": "Phone",
     "phoneFixed": "Phone (Landline)",
@@ -82,7 +81,9 @@
     "fillRequiredFields": "Please fill all required fields",
     "submissionFailed": "Submission failed",
     "backToHome": "Back to Home",
-    "step": "Step"
+    "step": "Step",
+    "studentImage": "Student Image",
+    "studentImage_help": "Please upload a clear portrait photo"
   }
   ,
   "grades": {
@@ -126,10 +127,74 @@
     "prefect_board_libraryStatement_good": "Good",
     "prefect_board_libraryStatement_normal": "Normal",
     "prefect_board_libraryStatement_weak": "Weak",
-    "prefect_board_specialNote": "Special note",
-    "prefect_board_specialNote_placeholder": "Any special notes (optional)"
+      "prefect_board_specialNote": "Special note",
+      "prefect_board_specialNote_placeholder": "Any special notes (optional)",
+      "prefect_board_libraryConfirmation": "Library confirmation file"
+      ,
+      "prefect_board_teachersSign": "Teacher's sign file upload"
   ,
   "choose_file": "Choose file",
   "no_file_chosen": "No file chosen",
   "allowed_images_note": "Allowed: images only (jpg, png, gif). PDF uploads are not accepted."
+  ,
+  "announcing": "Announcing",
+  "announcing_form": {
+    "title": "Announcing Form",
+    "parentGuardianName": "Parent / Guardian Name",
+    "parentGuardianAddress": "Parent / Guardian Address",
+    "fullName": "Full name",
+    "dob": "Date of birth",
+    "mobile": "Mobile number",
+    "landline": "Landline",
+    "school": "School",
+    "address": "Address",
+    "review": "Review & submit",
+    "agreement": "I agree to the student agreement",
+    "confirmTitle": "Confirm submission",
+    "confirmMessage": "Are you sure you want to submit?",
+    "submitted": "Submitted",
+    "fillRequiredFields": "Please fill required fields"
+  }
+  ,
+  "announcing_form_specialtalents": {
+    "title": "Special Talents",
+    "addButton": "Add special talent",
+    "inDhammaSchool": "In Dhamma school",
+    "inSchool": "In school",
+    "other": "Other",
+    "save": "Save",
+    "close": "Close",
+    "types": {
+      "announcing": "Announcing",
+      "kathika": "Kathika",
+      "padyagayana": "Padyagayana",
+      "debate": "Debate",
+      "acting": "Acting",
+      "singing": "Singing",
+      "dancing": "Dancing",
+      "prefect": "Prefect / Class leader",
+      "committee": "Committee leader"
+      ,
+      "other": "Other"
+    }
+  },
+  "login": "Login",
+  "login_title": "Welcome Back",
+  "login_subtitle": "Please enter your details to sign in",
+  "email": "Email Address",
+  "password": "Password",
+  "not_registered": "Don't have an account?",
+  "register": "Register",
+  "register_title": "Create an Account",
+  "register_subtitle": "Please fill in the details to create an account",
+  "name": "Full Name",
+  "role": "Role",
+  "role_student": "Student",
+  "role_teacher": "Teacher",
+  "role_admin": "Admin",
+  "confirm_password": "Confirm Password",
+  "already_registered": "Already have an account?",
+  "sign_in": "Sign in",
+  "sign_up": "Sign up",
+  "logout": "Logout"
 }

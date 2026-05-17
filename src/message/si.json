@@ -6,9 +6,7 @@
   "learn_more": "වැඩිදුර කියවන්න",
   "dhamma_school": "දහම් පාසල",
   "home": "ප්‍රධාන",
-  "competitions": "තරඟ",
-  "gallery": "පින්තූර"
-  ,
+  "gallery": "පින්තූර",
   "prefect_board": "ශිෂය නායක මණ්ඩලය"
   ,
   "prefect_board_title": "ශිෂය නායක මණ්ඩලය සඳහා අයදුම්පත",
@@ -21,15 +19,16 @@
   "prefect_board_reason": "ඔබ මෙහි ඇතුළු වීමට හේතුව කුමක්ද?",
   "prefect_board_submit": "දිවුරුම් කිරීම",
   "prefect_board_submitted": "අයදුම්පත භාරගනිමින් ඇත",
-  "videos_title": "නවතම දහම් වීඩියෝ",
+  "videos_title": "නවතම වීඩියෝ",
   "loading_videos": "වීඩියෝ පූරණය වෙමින්…",
   "join_us": "අප එක්වන්න",
   "form": {
-    "title": "ශිෂ්‍ය ලියාපදිංචිය",
-    "step1": "පුද්ගලික විස්තර",
+  "title": "ශිෂ්‍ය ලියාපදිංචිය",
+  "step1": "පුද්ගලික විස්තර",
     "step2": "අධ්‍යාපන සහ ලිපිනය",
     "step3": "හදිසි හා නියමයන්",
     "fullName": "සම්පූර්ණ නම",
+    "grade": "ශ්‍රේණිය",
     "dob": "උපන් දිනය",
     "phone": "දුරකථන",
     "phoneFixed": "දුරකථන (ස්ථිර)",
@@ -80,7 +79,9 @@
     "fillRequiredFields": "සියලුම අත්‍යාවශ්‍ය කරුණූ පුරවන්න.",
     "submissionFailed": "තහවුරු කිරීම අසාර්ථක විය",
     "backToHome": "ආපසු",
-    "step": "පියවර"
+    "step": "පියවර",
+    "studentImage": "ශිෂ්‍යයාගේ ඡායාරූපය",
+    "studentImage_help": "කරුණාකර පැහැදිලි ඡායාරූපයක් උඩුගත කරන්න"
   }
   ,
   "grades": {
@@ -126,7 +127,70 @@
   "prefect_board_libraryStatement_weak": "දුර්වල",
   "prefect_board_specialNote": "විශේෂ සටහන",
   "prefect_board_specialNote_placeholder": "විශේෂ සටහන් (විකල්ප)",
+  "prefect_board_libraryConfirmation": "පුස්තකාල තහවුරු කිරීමේ ගොනුව",
+  "prefect_board_teachersSign": "ගුරුවරුන්ගේ අත්සන් ගොනුව",
   "choose_file": "ගොනුව තෝරන්න",
   "no_file_chosen": "ගොනුවක් තෝරා නැත",
   "allowed_images_note": "අනුමත: පින්තූරු පමණක් (jpg, png, gif). PDF උඩුගත කිරීම් අනුමත නොවේ."
+  ,
+  "announcing": "සන්නිවේදන",
+  "announcing_form": {
+    "title": "සන්නිවේදන පෝරමය",
+    "parentGuardianName": "මව/පියා/භාරකරුගේ නම",
+    "parentGuardianAddress": "මව/පියා/භාරකරුගේ ලිපිනය",
+    "fullName": "සම්පූර්ණ නම",
+    "dob": "උපන්දිනය",
+    "mobile": "ජංගම දුරකථන",
+    "landline": "ස්ථිර දුරකථන",
+    "school": "පාසල",
+    "address": "ලිපිනය",
+    "review": "සමාලෝචනය හා යැවීම",
+    "agreement": "මම ශිෂ්‍ය එකඟතාවට එකඟ වෙමි",
+    "confirmTitle": "තහවුරු කරන්න",
+    "confirmMessage": "ඔබ සැකසූ විස්තර යවන බවට විශ්වාසද?",
+    "submitted": "යවන ලදී",
+    "fillRequiredFields": "අත්‍යවශ්‍ය ක්ෂේත්‍ර පුරවන්න"
+  }
+  ,
+  "announcing_form_specialtalents": {
+    "title": "විශේෂ pratibha",
+    "addButton": "විශේෂ දක්ෂතා එක් කරන්න",
+    "inDhammaSchool": "දහම් පාසලේ",
+    "inSchool": "පාසලේ",
+    "other": "වෙනත්",
+    "save": "සුරක්ෂිත කරන්න",
+    "close": "වසා දැමීමට",
+    "types": {
+      "announcing": "සන්නිවේදන",
+      "kathika": "කථික",
+      "padyagayana": "පදයක් කියවීම",
+      "debate": "තර්කය",
+      "acting": "රංගනය",
+      "singing": "ගායනය",
+      "dancing": "නර්තනය",
+      "prefect": "ශිෂ්‍ය නායක / පන්තිය නායක",
+      "committee": "කමිටු නායක"
+      ,
+      "other": "වෙනත්"
+    }
+  },
+  "login": "ලොග් වන්න",
+  "login_title": "නැවත සාදරයෙන් පිළිගනිමු",
+  "login_subtitle": "ඔබගේ ගිණුමට ඇතුල් වීමට විස්තර ඇතුළත් කරන්න",
+  "email": "විද්‍යුත් තැපෑල",
+  "password": "මුරපදය",
+  "not_registered": "ගිණුමක් නැද්ද?",
+  "register": "ලියාපදිංචි වන්න",
+  "register_title": "ගිණුමක් සාදන්න",
+  "register_subtitle": "ගිණුමක් සෑදීමට කරුණාකර විස්තර පුරවන්න",
+  "name": "සම්පූර්ණ නම",
+  "role": "භූමිකාව",
+  "role_student": "ශිෂ්‍ය",
+  "role_teacher": "ගුරු",
+  "role_admin": "පරිපාලක",
+  "confirm_password": "මුරපදය තහවුරු කරන්න",
+  "already_registered": "දැනටමත් ගිණුමක් තිබේද?",
+  "sign_in": "ඇතුල් වන්න",
+  "sign_up": "ලියාපදිංචි වන්න",
+  "logout": "ඉවත් වන්න"
 }
