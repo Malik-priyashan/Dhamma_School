@@ -5,7 +5,7 @@ import { useRouter, usePathname } from "next/navigation";
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import { locales } from "../../config";
-import { fetchCurrentUser } from "./auth/api/authApi";
+import { fetchCurrentUser, logoutUser } from "./auth/api/authApi";
 import { getUserRole } from "../../lib/authUtils";
 import TeacherSidebar from "./teacher/TeacherSidebar";
 import AdminSidebar from "./admin/AdminSidebar";
@@ -146,7 +146,12 @@ export default function Header() {
             <div className="hidden md:block">
               {isAuthenticated ? (
                 <button
-                  onClick={() => {
+                  onClick={async () => {
+                    try {
+                      await logoutUser();
+                    } catch (e) {
+                      console.error("Backend logout failed:", e);
+                    }
                     document.cookie = "auth_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
                     document.cookie = "userRole=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
                     localStorage.removeItem('userRole');

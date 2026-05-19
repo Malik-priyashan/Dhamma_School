@@ -3,6 +3,7 @@
 import React from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Image from "next/image";
+import { logoutUser } from "../auth/api/authApi";
 
 interface TeacherSidebarProps {
   setIsAuthenticated: (val: boolean) => void;
@@ -17,7 +18,12 @@ export default function TeacherSidebar({ setIsAuthenticated }: TeacherSidebarPro
     router.push(`/en${path}`);
   }
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await logoutUser();
+    } catch (e) {
+      console.error("Backend logout failed:", e);
+    }
     document.cookie = "auth_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
     document.cookie = "userRole=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
     localStorage.removeItem('userRole');
