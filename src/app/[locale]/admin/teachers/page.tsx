@@ -6,6 +6,7 @@ import { useLocale } from "next-intl";
 import { fetchCurrentUser } from "../../../features/auth/api/authApi";
 import { getUserRole } from "../../../../lib/authUtils";
 import { fetchAllTeachers, updateTeacherStatus, deleteUser } from "../../../features/admin/api/usersApi";
+import LoadingPage from "../../../components/ui/LoadingPage";
 
 interface Teacher {
   id: string;
@@ -100,10 +101,11 @@ export default function TeachersPage() {
     }
   };
 
-  if (isAuthenticated === null || !isAuthenticated) return null;
+  if (isAuthenticated === null) return <LoadingPage />;
+  if (!isAuthenticated) return null;
 
   return (
-    <main className="min-h-screen bg-slate-50 flex-1 ml-64 p-8 pt-12">
+    <main className="min-h-screen bg-slate-50 flex-1 ml-0 md:ml-64 p-4 md:p-8 pt-20 md:pt-12">
       <div className="max-w-6xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <div>

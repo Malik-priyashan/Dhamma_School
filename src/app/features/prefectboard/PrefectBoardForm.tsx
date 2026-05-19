@@ -11,6 +11,8 @@ import { useRouter } from "next/navigation";
 import { fetchCurrentUser } from "../auth/api/authApi";
 import { getUserRole } from "../../../lib/authUtils";
 
+import LoadingPage from "../../components/ui/LoadingPage";
+
 export default function PrefectBoardForm() {
   const t = useTranslations();
   const { data, setField, step, next, prev, submit, reset } = usePrefectForm();
@@ -74,6 +76,7 @@ export default function PrefectBoardForm() {
     }
   }
 
+  if (isAuthenticated === null) return <LoadingPage />;
   if (!isAuthenticated) return null;
 
   return (

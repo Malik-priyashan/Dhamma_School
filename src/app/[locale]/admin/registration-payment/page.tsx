@@ -44,7 +44,7 @@ export default function RegistrationPaymentPage() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-50 flex-1 ml-64 p-8 pt-12">
+    <main className="min-h-screen bg-slate-50 flex-1 ml-0 md:ml-64 p-4 md:p-8 pt-20 md:pt-12">
       <div className="max-w-4xl mx-auto w-full">
         <div className="mb-8 flex items-center justify-between">
         <div>

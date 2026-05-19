@@ -6,8 +6,11 @@ import Step1 from "./steps/Step1";
 import Step2 from "./steps/Step2";
 import Step3 from "./steps/Step3";
 import { useRouter } from "next/navigation";
-import { useLocale } from "next-intl";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import { useEffect, useState } from "react";
+import { fetchCurrentUser } from "../auth/api/authApi";
+import { getUserRole } from "../../../lib/authUtils";
+import LoadingPage from "../../components/ui/LoadingPage";
 
 export default function AnnouncingForm() {
   const { data, setField, step, next, prev, submit, reset } = useAnnouncingForm();
@@ -15,6 +18,39 @@ export default function AnnouncingForm() {
   const router = useRouter();
   const t = useTranslations();
   const { loading, showConfirm, setShowConfirm, percent, onChange, handleSubmit, validateStepFields, toast, notify } = useAnnouncingFormUI({ step, setField, submit, data });
+  
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function syncAuth() {
+      try {
+        await fetchCurrentUser();
+        const role = getUserRole();
+        
+        if (role !== 'STUDENT') {
+          router.push(`/${locale}`);
+          return;
+        }
+
+        if (isMounted) {
+          setIsAuthenticated(true);
+        }
+      } catch {
+        if (isMounted) {
+          setIsAuthenticated(false);
+          router.push(`/${locale}/login`);
+        }
+      }
+    }
+
+    syncAuth();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [locale, router]);
 
   const doSubmit = async () => {
     try {
@@ -31,6 +67,9 @@ export default function AnnouncingForm() {
       );
     } catch {}
   };
+
+  if (isAuthenticated === null) return <LoadingPage />;
+  if (!isAuthenticated) return null;
 
   return (
     <>
