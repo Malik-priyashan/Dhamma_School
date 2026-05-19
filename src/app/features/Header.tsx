@@ -157,9 +157,19 @@ export default function Header() {
                       console.error("Backend logout failed:", e);
                     }
                     
-                    // Clear all cookies
+                    try {
+                      await fetch('/api/frontend-logout', { method: 'POST' });
+                    } catch (e) {
+                      console.error("Frontend cookie native clear failed:", e);
+                    }
+                    
+                    // Clear all accessible JS cookies
                     document.cookie.split(";").forEach((c) => {
-                      document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+                      const name = c.replace(/^ +/, "").split("=")[0];
+                      if (name) {
+                        document.cookie = name + "=;expires=" + new Date(0).toUTCString() + ";path=/";
+                        document.cookie = name + "=;expires=" + new Date(0).toUTCString() + ";path=/;domain=" + window.location.hostname;
+                      }
                     });
                     
                     localStorage.clear();
