@@ -14,6 +14,11 @@ const nextConfig = {
 			},
 		],
 	},
-};
-
-export default withNextIntl(nextConfig);
+        async rewrites() {
+                return [
+                        {
+                                source: '/api/proxy/:path*',
+                                destination: `${process.env.PROXY_TARGET_BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL}/:path*`,
+                        },
+                ];
+        },
