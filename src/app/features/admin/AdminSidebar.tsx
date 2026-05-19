@@ -23,12 +23,18 @@ export default function AdminSidebar({ setIsAuthenticated }: AdminSidebarProps) 
     } catch (e) {
       console.error("Backend logout failed:", e);
     }
-    document.cookie = "auth_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-    document.cookie = "userRole=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-    localStorage.removeItem('userRole');
-    sessionStorage.removeItem('studentForm:v1');
+    
+    // Clear all cookies
+    document.cookie.split(";").forEach((c) => {
+      document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+    });
+    
+    localStorage.clear();
+    sessionStorage.clear();
     setIsAuthenticated(false);
-    go('/login');
+    
+    // Hard refresh to login page
+    window.location.href = '/en/login';
   };
 
   const navLinks = [

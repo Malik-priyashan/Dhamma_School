@@ -152,12 +152,18 @@ export default function Header() {
                     } catch (e) {
                       console.error("Backend logout failed:", e);
                     }
-                    document.cookie = "auth_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-                    document.cookie = "userRole=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-                    localStorage.removeItem('userRole');
-                    sessionStorage.removeItem('studentForm:v1');
+                    
+                    // Clear all cookies
+                    document.cookie.split(";").forEach((c) => {
+                      document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+                    });
+                    
+                    localStorage.clear();
+                    sessionStorage.clear();
                     setIsAuthenticated(false);
-                    go('/login');
+                    
+                    // Hard refresh to login page preserving locale
+                    window.location.href = `/${locale}/login`;
                   }}
                   className="bg-red-600 text-white px-5 py-1.5 rounded-full text-sm font-medium hover:bg-red-700 transition"
                 >
