@@ -4,16 +4,16 @@ const withNextIntl = createNextIntlPlugin();
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-	images: {
-		remotePatterns: [
-			{
-				protocol: 'https',
-				hostname: 'i.ytimg.com',
-				port: '',
-				pathname: '/vi/**',
-			},
-		],
-	},
+        images: {
+                remotePatterns: [
+                        {
+                                protocol: 'https',
+                                hostname: 'i.ytimg.com',
+                                port: '',
+                                pathname: '/vi/**',
+                        },
+                ],
+        },
         async rewrites() {
                 return [
                         {
@@ -22,3 +22,6 @@ const nextConfig = {
                         },
                 ];
         },
+};
+
+export default withNextIntl(nextConfig);
