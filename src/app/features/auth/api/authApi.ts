@@ -97,3 +97,24 @@ export async function fetchCurrentUser() {
     throw err;
   }
 }
+
+export async function logoutUser() {
+  const base = (process.env.NEXT_PUBLIC_BACKEND_URL as string) || '';
+  const target = `${base.replace(/\/$/, '')}/auth/logout`;
+
+  try {
+    const res = await fetch(target, {
+      method: 'POST',
+      credentials: 'include',
+    });
+    
+    if (!res.ok) {
+      throw new Error(`Logout failed ${res.status}`);
+    }
+    
+    return await res.json();
+  } catch (err) {
+    console.error('logoutUser error', err);
+    throw err;
+  }
+}
