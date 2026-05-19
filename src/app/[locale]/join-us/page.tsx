@@ -6,6 +6,7 @@ import { useLocale } from "next-intl";
 import { StudentForm } from "../../features/studentform";
 import { fetchCurrentUser } from "../../features/auth/api/authApi";
 import { getUserRole } from "../../../lib/authUtils";
+import LoadingPage from "../../components/ui/LoadingPage";
 
 export default function JoinUsPage() {
   const router = useRouter();
@@ -43,6 +44,7 @@ export default function JoinUsPage() {
     };
   }, [locale, router]);
 
+  if (isAuthenticated === null) return <LoadingPage />;
   if (!isAuthenticated) return null;
 
   return (

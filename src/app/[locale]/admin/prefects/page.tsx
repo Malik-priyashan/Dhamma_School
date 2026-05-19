@@ -8,6 +8,7 @@ import { getUserRole } from "../../../../lib/authUtils";
 import { fetchAllPrefects } from "../../../features/prefectboard/api/prefectboardapi";
 import PrefectDetailsCard from "../../../features/prefectboard/components/PrefectDetailsCard";
 import { PrefectFormData } from "../../../features/prefectboard/types";
+import LoadingPage from "../../../components/ui/LoadingPage";
 
 export default function PrefectBoardAdminPage() {
   const router = useRouter();
@@ -130,10 +131,11 @@ export default function PrefectBoardAdminPage() {
     );
   };
 
-  if (isAuthenticated === null || !isAuthenticated) return null;
+  if (isAuthenticated === null) return <LoadingPage />;
+  if (!isAuthenticated) return null;
 
   return (
-    <main className="min-h-screen bg-slate-50 flex-1 ml-64 p-8 pt-12">
+    <main className="min-h-screen bg-slate-50 flex-1 ml-0 md:ml-64 p-4 md:p-8 pt-20 md:pt-12">
       <div className="max-w-6xl mx-auto space-y-6">
         
         {/* Header Section */}

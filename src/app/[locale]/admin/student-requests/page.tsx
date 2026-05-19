@@ -9,6 +9,7 @@ import { useStudentRequests } from "../../../features/studentrequest/hooks/useSt
 import StudentRequestCard from "../../../features/studentrequest/components/StudentRequestCard";
 import { StudentRequest } from "../../../features/studentrequest/types/types";
 import { acceptStudentRequest, rejectStudentRequest, updateStudent } from "../../../features/studentrequest/api/studentRequestsApi";
+import LoadingPage from "../../../components/ui/LoadingPage";
 
 export default function StudentRequestsPage() {
   const router = useRouter();
@@ -125,10 +126,11 @@ export default function StudentRequestsPage() {
     }
   };
 
+  if (isAuthenticated === null) return <LoadingPage />;
   if (!isAuthenticated) return null;
 
   return (
-    <main className="min-h-screen bg-slate-50 flex-1 ml-64 p-8 pt-12">
+    <main className="min-h-screen bg-slate-50 flex-1 ml-0 md:ml-64 p-4 md:p-8 pt-20 md:pt-12">
       <div className="max-w-6xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <div>

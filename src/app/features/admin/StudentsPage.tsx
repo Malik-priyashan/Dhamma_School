@@ -8,6 +8,7 @@ import { getUserRole } from "../../../lib/authUtils";
 import { useStudents } from "../students/hooks/useStudents";
 import StudentCard from "../students/components/StudentCard";
 import { StudentDTO } from "../studentform/types/types";
+import LoadingPage from "../../components/ui/LoadingPage";
 
 export default function StudentsPage() {
   const router = useRouter();
@@ -64,10 +65,11 @@ export default function StudentsPage() {
   const { data, loading, error, refetch } = useStudents(!!isAuthenticated && !!filterGrade, filterGrade, debouncedName);
   const [selectedStudent, setSelectedStudent] = useState<StudentDTO | null>(null);
 
+  if (isAuthenticated === null) return <LoadingPage />;
   if (!isAuthenticated) return null;
 
   return (
-    <main className="min-h-screen bg-slate-50 flex-1 ml-64 p-8 pt-12">
+    <main className="min-h-screen bg-slate-50 flex-1 ml-0 md:ml-64 p-4 md:p-8 pt-20 md:pt-12">
       <div className="max-w-6xl mx-auto space-y-8">
         
         {/* Header with Stats & Actions */}
