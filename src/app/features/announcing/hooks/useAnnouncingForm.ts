@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { AnnouncingDTO } from "../types/types";
 import { createAnnouncing } from "../api/announcingApi";
 
@@ -146,7 +146,16 @@ export function useAnnouncingFormUI({ step, setField, submit, data }: { step: nu
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [toast, setToast] = useState<{ show: boolean; message: string; type?: 'success' | 'error' }>({ show: false, message: '', type: 'success' });
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [toast, setToast] = useState<{ show: boolean; message: string; type?: 'success' | 'error'; duration: number; id: number }>({ show: false, message: '', type: 'success', duration: 3000, id: 0 });
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) {
+        clearTimeout(toastTimerRef.current);
+      }
+    };
+  }, []);
 
   function computeCompletion() {
     const completed = Math.max(0, step - 1);
@@ -160,9 +169,17 @@ export function useAnnouncingFormUI({ step, setField, submit, data }: { step: nu
     setField(k, v);
   }
 
-  function notify(messageText: string, type: 'success' | 'error' = 'success', duration = 4000) {
-    setToast({ show: true, message: messageText, type });
-    setTimeout(() => setToast({ show: false, message: '', type }), duration);
+  function notify(messageText: string, type: 'success' | 'error' = 'success') {
+    if (toastTimerRef.current) {
+      clearTimeout(toastTimerRef.current);
+    }
+
+    const duration = 3000;
+    setToast({ show: true, message: messageText, type, duration, id: Date.now() });
+    toastTimerRef.current = setTimeout(() => {
+      setToast((current) => ({ ...current, show: false, message: '' }));
+      toastTimerRef.current = null;
+    }, duration);
   }
 
   function validateStepFields(currentStep: number) {

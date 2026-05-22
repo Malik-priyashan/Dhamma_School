@@ -1,11 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { StudentDTO, Sibling } from "../types/types";
 import { submitStudentRequest } from "../api/studentRequestApi";
 import { buildStudentDTO } from "../dto/dto";
 import { CLOUDINARY_CLOUD_NAME, CLOUDINARY_UPLOAD_PRESET } from "../../../../config";
+
+const MAX_STUDENT_IMAGE_SIZE = 5 * 1024 * 1024;
+const ALLOWED_STUDENT_IMAGE_TYPES = ["image/jpeg", "image/webp"];
 
 export function useStudentForm(initial?: Partial<StudentDTO>) {
   const storageKey = 'studentForm:v1';
@@ -77,6 +80,18 @@ export function useStudentForm(initial?: Partial<StudentDTO>) {
     // Ensure agreeToTerms flag exists
     if (!data.agreeToTerms) {
       throw new Error("Must agree to terms");
+    }
+
+    if (!(data.studentImage instanceof File)) {
+      throw new Error("Please choose a student profile image.");
+    }
+
+    if (!ALLOWED_STUDENT_IMAGE_TYPES.includes(data.studentImage.type)) {
+      throw new Error("Please choose a JPG or WEBP image. PNG images are not accepted.");
+    }
+
+    if (data.studentImage.size > MAX_STUDENT_IMAGE_SIZE) {
+      throw new Error("Please choose an image under 5 MB.");
     }
 
     // medicine is already a single field in the new schema
@@ -184,7 +199,16 @@ export function useStudentFormUI({ step, setFieldAction, submitAction, data }: {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [toast, setToast] = useState<{ show: boolean; message: string; type?: 'success' | 'error' }>({ show: false, message: '', type: 'success' });
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [toast, setToast] = useState<{ show: boolean; message: string; type?: 'success' | 'error'; duration: number; id: number }>({ show: false, message: '', type: 'success', duration: 3000, id: 0 });
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) {
+        clearTimeout(toastTimerRef.current);
+      }
+    };
+  }, []);
 
   function computeCompletion() {
     const completed = Math.max(0, step - 1);
@@ -198,18 +222,42 @@ export function useStudentFormUI({ step, setFieldAction, submitAction, data }: {
     setFieldAction(k, v);
   }
 
-  function notify(messageText: string, type: 'success' | 'error' = 'success', duration = 3000) {
-    setToast({ show: true, message: messageText, type });
-    setTimeout(() => setToast({ show: false, message: '', type }), duration);
+  function notify(messageText: string, type: 'success' | 'error' = 'success') {
+    if (toastTimerRef.current) {
+      clearTimeout(toastTimerRef.current);
+    }
+
+    const toastDuration = 3000;
+    setToast({ show: true, message: messageText, type, duration: toastDuration, id: Date.now() });
+    toastTimerRef.current = setTimeout(() => {
+      setToast((current) => ({ ...current, show: false, message: '' }));
+      toastTimerRef.current = null;
+    }, toastDuration);
   }
 
   function validateStepFields(currentStep: number) {
     if (currentStep === 1) {
+      const image = data.studentImage;
+      const hasValidImage =
+        image instanceof File &&
+        ALLOWED_STUDENT_IMAGE_TYPES.includes(image.type) &&
+        image.size <= MAX_STUDENT_IMAGE_SIZE;
       const hasName = !!(String(data.fullNameWithSurname ?? '').trim());
       const hasDob = !!String(data.dob ?? '').trim();
       const hasPhone = !!String(data.phone2 ?? '').trim();
       const hasAddress = !!String(data.address ?? '').trim();
       const hasSchool = !!String(data.school ?? '').trim();
+
+      if (!(image instanceof File)) {
+        notify('Please choose a student profile image.', 'error');
+        return false;
+      }
+
+      if (!hasValidImage) {
+        notify('Please choose a JPG or WEBP image under 5 MB. PNG images are not accepted.', 'error');
+        return false;
+      }
+
       if (!hasName || !hasDob || !hasPhone || !hasAddress || !hasSchool) {
         notify(t('form.fillRequiredFields') || 'Please fill required fields', 'error');
         return false;

@@ -73,33 +73,34 @@ export default function Step2({ data, onChange }: StepProps) {
 
       {/* Detail popup for a selected type */}
       {editingType && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white w-11/12 max-w-lg p-4 rounded shadow">
-            <div className="flex items-center justify-between mb-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-6">
+          <div className="flex max-h-[92vh] w-full max-w-4xl flex-col rounded bg-white shadow-xl">
+            <div className="flex items-center justify-between border-b px-5 py-4">
               <div className="font-semibold text-black">{t(`announcing_form_specialtalents.types.${editingType}`)}</div>
-              <button onClick={closeDetail} className="text-gray-600">✕</button>
+              <button type="button" onClick={closeDetail} className="text-gray-600">x</button>
             </div>
 
-            <div className="grid gap-3">
+            <div className="grid gap-4 overflow-y-auto px-5 py-4">
               <label className="block">
                 <div className="text-sm text-gray-700">{t('announcing_form_specialtalents.inDhammaSchool')}</div>
-                <input value={detail.inDhammaSchool ?? ''} onChange={(e) => setDetail((s) => ({ ...s, inDhammaSchool: e.target.value }))} className="mt-1 block w-full rounded border px-3 py-2 text-black" />
+                <textarea value={detail.inDhammaSchool ?? ''} onChange={(e) => setDetail((s) => ({ ...s, inDhammaSchool: e.target.value }))} rows={5} className="mt-2 block min-h-32 w-full resize-y rounded border px-3 py-2 text-black" />
               </label>
 
               <label className="block">
                 <div className="text-sm text-gray-700">{t('announcing_form_specialtalents.inSchool')}</div>
-                <input value={detail.inSchool ?? ''} onChange={(e) => setDetail((s) => ({ ...s, inSchool: e.target.value }))} className="mt-1 block w-full rounded border px-3 py-2 text-black" />
+                <textarea value={detail.inSchool ?? ''} onChange={(e) => setDetail((s) => ({ ...s, inSchool: e.target.value }))} rows={5} className="mt-2 block min-h-32 w-full resize-y rounded border px-3 py-2 text-black" />
               </label>
 
               <label className="block">
                 <div className="text-sm text-gray-700">{t('announcing_form_specialtalents.other')}</div>
-                <input value={detail.other ?? ''} onChange={(e) => setDetail((s) => ({ ...s, other: e.target.value }))} className="mt-1 block w-full rounded border px-3 py-2 text-black" />
+                <textarea value={detail.other ?? ''} onChange={(e) => setDetail((s) => ({ ...s, other: e.target.value }))} rows={5} className="mt-2 block min-h-32 w-full resize-y rounded border px-3 py-2 text-black" />
               </label>
 
-              <div className="flex justify-end gap-2 mt-2">
-                <button onClick={closeDetail} className="px-4 py-2 rounded-full border">{t('announcing_form_specialtalents.close')}</button>
-                <button onClick={saveDetail} className="px-4 py-2 rounded-full bg-sky-500 text-white">{t('announcing_form_specialtalents.save')}</button>
-              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 border-t px-5 py-4">
+              <button type="button" onClick={closeDetail} className="rounded-full border px-4 py-2">{t('announcing_form_specialtalents.close')}</button>
+              <button type="button" onClick={saveDetail} className="rounded-full bg-sky-500 px-4 py-2 text-white">{t('announcing_form_specialtalents.save')}</button>
             </div>
           </div>
         </div>

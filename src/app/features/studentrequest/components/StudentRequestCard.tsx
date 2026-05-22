@@ -99,7 +99,25 @@ export default function StudentRequestCard({
   const req = request as any;
 
   const handleAdminDetailsChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setAdminDetails({ ...adminDetails, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    
+    let newAdminDetails = { ...adminDetails, [name]: value };
+    
+    if (name === "indexNo") {
+      const indexNum = parseInt(value, 10);
+      if (!isNaN(indexNum)) {
+        const remainder = indexNum % 4;
+        let house = "";
+        if (remainder === 0) house = "METHTHA";
+        else if (remainder === 1) house = "KARUNA";
+        else if (remainder === 2) house = "MUDITHA";
+        else if (remainder === 3) house = "UPEKSHA";
+        
+        newAdminDetails = { ...newAdminDetails, house };
+      }
+    }
+    
+    setAdminDetails(newAdminDetails);
   };
 
 
@@ -174,10 +192,10 @@ export default function StudentRequestCard({
       <div className="relative max-h-[92vh] w-full max-w-6xl overflow-auto rounded-lg bg-white shadow-2xl">
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white/90 backdrop-blur-md p-6 px-8 shadow-sm">
           <div className="flex items-center gap-6">
-            {request.studentImage ? (
+            {adminSource?.studentImage || request.studentImage ? (
               <div className="h-24 w-24 shrink-0 overflow-hidden rounded-2xl border-2 border-white shadow-lg ring-1 ring-slate-200">
                 <img
-                  src={request.studentImage}
+                  src={adminSource?.studentImage || request.studentImage}
                   alt="Student profile"
                   className="h-full w-full object-cover"
                   onError={(e) => {

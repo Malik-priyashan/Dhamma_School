@@ -1,13 +1,13 @@
 import { NextRequest } from 'next/server';
 
-export async function GET(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) { return proxyRequest(req, await params); }
-export async function POST(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) { return proxyRequest(req, await params); }
-export async function PUT(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) { return proxyRequest(req, await params); }
-export async function PATCH(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) { return proxyRequest(req, await params); }
-export async function DELETE(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) { return proxyRequest(req, await params); }
-export async function OPTIONS(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) { return proxyRequest(req, await params); }
+export async function GET(req: NextRequest, _args: { params: Promise<{ path: string[] }> }) { return proxyRequest(req, await _args.params); }
+export async function POST(req: NextRequest, _args: { params: Promise<{ path: string[] }> }) { return proxyRequest(req, await _args.params); }
+export async function PUT(req: NextRequest, _args: { params: Promise<{ path: string[] }> }) { return proxyRequest(req, await _args.params); }
+export async function PATCH(req: NextRequest, _args: { params: Promise<{ path: string[] }> }) { return proxyRequest(req, await _args.params); }
+export async function DELETE(req: NextRequest, _args: { params: Promise<{ path: string[] }> }) { return proxyRequest(req, await _args.params); }
+export async function OPTIONS(req: NextRequest, _args: { params: Promise<{ path: string[] }> }) { return proxyRequest(req, await _args.params); }
 
-async function proxyRequest(req: NextRequest, params: { path: string[] }) {
+async function proxyRequest(req: NextRequest, _params: { path: string[] }) {
   // Use the explicitly provided target URL or default back to whatever the backend URL was originally
   const targetHost = process.env.PROXY_TARGET_BACKEND_URL || 'https://dhamma-backend.vercel.app'; 
   
@@ -54,4 +54,5 @@ async function proxyRequest(req: NextRequest, params: { path: string[] }) {
       headers: { 'Content-Type': 'application/json' }
     });
   }
+  
 }

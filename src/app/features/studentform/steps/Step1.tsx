@@ -4,7 +4,10 @@ import React from "react";
 import { StepProps, YesNo } from "../types/types";
 import { useTranslations } from "next-intl";
 
-export default function Step1({ data, onChange }: StepProps) {
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/webp"];
+
+export default function Step1({ data, onChange, onValidationError }: StepProps) {
   const t = useTranslations();
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
   const [previewUrl, setPreviewUrl] = React.useState<string | null>(null);
@@ -23,39 +26,61 @@ export default function Step1({ data, onChange }: StepProps) {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
+
+    if (!file) {
+      onChange('studentImage', null);
+      return;
+    }
+
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+      onValidationError?.("Please choose a JPG or WEBP image. PNG images are not accepted.");
+      e.target.value = "";
+      onChange('studentImage', null);
+      return;
+    }
+
+    if (file.size > MAX_IMAGE_SIZE) {
+      onValidationError?.("Please choose an image under 5 MB.");
+      e.target.value = "";
+      onChange('studentImage', null);
+      return;
+    }
+
     onChange('studentImage', file);
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-gray-300 rounded-2xl bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+      <div className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-sky-200 rounded-2xl bg-sky-50/60 hover:bg-sky-50 transition-colors cursor-pointer" onClick={() => fileInputRef.current?.click()}>
         <div className="relative group">
           <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-white shadow-lg bg-gray-200 flex items-center justify-center">
             {previewUrl ? (
                
               <img src={previewUrl} alt="Student" className="w-full h-full object-cover" />
             ) : (
-              <svg className="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
+              <div className="flex h-full w-full flex-col items-center justify-center bg-white text-center">
+                <svg className="mb-2 h-9 w-9 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 16.5V19a2 2 0 002 2h14a2 2 0 002-2v-2.5M7 10l5-5m0 0l5 5m-5-5v12" />
+                </svg>
+                <span className="px-3 text-xs font-black uppercase tracking-wide text-sky-700">Choose image</span>
+              </div>
             )}
           </div>
-          <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity">
-            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
+          <div className="absolute inset-0 flex items-center justify-center rounded-full bg-slate-950/45 opacity-0 group-hover:opacity-100 transition-opacity">
+            <span className="rounded-full bg-white px-3 py-1.5 text-xs font-black text-sky-700 shadow">Choose image</span>
           </div>
         </div>
         <div className="mt-3 text-center">
-          <span className="text-sm font-semibold text-sky-600">{t('form.studentImage')}</span>
-          <p className="text-xs text-gray-500 mt-1">{t('form.studentImage_help')}</p>
+          <span className="text-sm font-semibold text-sky-700">{t('form.studentImage')}<span className="text-red-500 ml-1">*</span></span>
+          <p className="text-xs text-gray-500 mt-1">JPG or WEBP only. PNG is not accepted. Image must be under 5 MB.</p>
         </div>
         <input
           type="file"
           ref={fileInputRef}
           onChange={handleFileChange}
-          accept="image/*"
+          accept="image/jpeg,image/webp"
+          required
+          aria-required="true"
           className="hidden"
         />
       </div>

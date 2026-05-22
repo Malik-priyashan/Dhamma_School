@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { StudentDTO, Sibling } from "../../studentform/types/types";
 import { updateStudent } from "../api/studentsApi";
+import { normalizeDto } from "../../studentform/dto/dto";
+import { CLOUDINARY_CLOUD_NAME, CLOUDINARY_UPLOAD_PRESET } from "../../../../config";
 
 export default function StudentCard({
   student,
@@ -22,7 +24,15 @@ export default function StudentCard({
 
   useEffect(() => {
     if (student) {
-      setFormData({ ...student });
+      let parsedSiblings = student.siblings;
+      if (typeof parsedSiblings === 'string') {
+        try {
+          parsedSiblings = JSON.parse(parsedSiblings);
+        } catch (_e) {
+          parsedSiblings = [];
+        }
+      }
+      setFormData({ ...student, siblings: Array.isArray(parsedSiblings) ? parsedSiblings : [] });
       setPreviewUrl(typeof student.studentImage === 'string' ? student.studentImage : null);
     }
   }, [student]);
@@ -66,29 +76,52 @@ export default function StudentCard({
     if (!student.id) return;
     setIsSaving(true);
     try {
-      let dataToSubmit: any = formData;
+      const payload = normalizeDto(formData as Record<string, unknown>);
       
-      if (selectedFile) {
-        const fd = new FormData();
-        fd.append('studentImage', selectedFile);
-        
-        // Append other fields
-        Object.entries(formData).forEach(([key, value]) => {
-          if (key === 'registrationPayment') return; // Skip non-editable numeric field to avoid string validation error
-          if (key === 'siblings') {
-            fd.append(key, JSON.stringify(value));
-          } else if (value !== null && value !== undefined) {
-            fd.append(key, String(value));
-          }
-        });
-        dataToSubmit = fd;
-      } else {
-        // For JSON submission, also exclude registrationPayment to avoid potential validation issues
-        const { registrationPayment: _registrationPayment, ...rest } = formData;
-        dataToSubmit = rest;
-      }
+      const jsonPayload = { ...payload };
+      delete jsonPayload['registrationPayment'];
+      
+      // If there is a new image selected, upload it to Cloudinary first
+      if (selectedFile && CLOUDINARY_CLOUD_NAME && CLOUDINARY_UPLOAD_PRESET) {
+        try {
+          const slugify = (s: string) =>
+            String(s)
+              .toLowerCase()
+              .trim()
+              .replace(/[^a-z0-9]+/g, '-')
+              .replace(/^-+|-+$/g, '') || 'student';
 
-      await updateStudent(student.id, dataToSubmit);
+          const studentNameSlug = slugify(jsonPayload.fullNameWithSurname as string || student.fullNameWithSurname);
+          const publicId = `student-profile-${studentNameSlug}-${Date.now()}`;
+
+          const form = new FormData();
+          form.append('file', selectedFile);
+          form.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+          form.append('folder', 'dhammaschool/students');
+          form.append('public_id', publicId);
+
+          const uploadUrl = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/upload`;
+          const uploadRes = await fetch(uploadUrl, { method: 'POST', body: form });
+          const uploadJson = await uploadRes.json();
+
+          if (!uploadRes.ok) throw new Error(uploadJson?.error?.message || 'Cloudinary upload failed');
+
+          const secureUrl = uploadJson.secure_url || uploadJson.url;
+          if (secureUrl) {
+            jsonPayload.studentImage = secureUrl;
+          }
+        } catch (err) {
+          console.error("Cloudinary upload failed:", err);
+          alert("Warning: Failed to upload profile image to Cloudinary.");
+        }
+      } else if (!selectedFile && student.studentImage) {
+        // preserve existing image URL if not changed
+        jsonPayload.studentImage = student.studentImage;
+      }
+      
+      // Submit everything via JSON
+      await updateStudent(student.id, jsonPayload);
+
       setIsEditing(false);
       setSelectedFile(null);
       if (onUpdate) onUpdate();

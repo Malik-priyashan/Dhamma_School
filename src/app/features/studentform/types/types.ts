@@ -64,5 +64,6 @@ export interface StudentDTO {
 export type StepProps = {
   data: StudentDTO;
   onChange: <K extends keyof StudentDTO>(k: K, v: StudentDTO[K]) => void;
+  onValidationError?: (message: string) => void;
 };
 

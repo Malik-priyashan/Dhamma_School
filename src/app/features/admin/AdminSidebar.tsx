@@ -45,6 +45,7 @@ export default function AdminSidebar({ setIsAuthenticated }: AdminSidebarProps) 
     { path: '/admin/student-requests', label: 'Student Requests' },
     { path: '/admin/teachers', label: 'Teachers' },
     { path: '/admin/registration-payment', label: 'Registration Payment' },
+    { path: '/admin/student-marks', label: 'Student Marks' },
     { path: '/admin/prefects', label: 'Prefect Board' },
     { path: '/admin/announcing', label: 'Announcing' },
   ];
@@ -75,7 +76,7 @@ export default function AdminSidebar({ setIsAuthenticated }: AdminSidebarProps) 
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
           </button>
           <div className="w-20 h-20 rounded-full overflow-hidden shadow-sm bg-white p-2 mb-4 border border-slate-100">
-            <Image src="/Screenshot%20(801).png" alt="logo" width={64} height={64} />
+            <Image src="/logo/logo.jpeg" alt="logo" width={64} height={64} />
           </div>
           <h2 className="font-bold text-lg text-slate-800">Admin Portal</h2>
         </div>
