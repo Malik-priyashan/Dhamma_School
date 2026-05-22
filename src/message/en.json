@@ -1,6 +1,7 @@
 
 {
-  "welcome_school": "Welcome to Siri Sumanathissa Dhamma School",
+  "welcome_school": "Welcome to Dhamma School",
+  "school_name": "Siri Sumanathissa Dhamma School",
   "subheading": "Discover the teachings, events and community.",
   "cta": "join Us",
   "learn_more": "Learn more",
@@ -179,7 +180,7 @@
     }
   },
   "login": "Login",
-  "login_title": "Welcome Back",
+  "login_title": "Welcome",
   "login_subtitle": "Please enter your details to sign in",
   "email": "Email Address",
   "password": "Password",
@@ -187,6 +188,12 @@
   "register": "Register",
   "register_title": "Create an Account",
   "register_subtitle": "Please fill in the details to create an account",
+  "passwords_do_not_match": "Passwords do not match!",
+  "registration_failed": "Registration failed. Please try again.",
+  "registration_successful": "Registration Successful",
+  "teacher_registration_pending": "Your teacher account has been registered successfully and is pending administrator approval.",
+  "registration_redirecting": "Successfully registered! Redirecting to login page...",
+  "registering": "Registering...",
   "name": "Full Name",
   "role": "Role",
   "role_student": "Student",
@@ -196,5 +203,16 @@
   "already_registered": "Already have an account?",
   "sign_in": "Sign in",
   "sign_up": "Sign up",
-  "logout": "Logout"
+  "logout": "Logout",
+  "marks": "Marks",
+  "student": "Student",
+  "class_teacher": "Class Teacher",
+  "first_term": "First Term",
+  "second_term": "Second Term",
+  "third_term": "Third Term",
+  "no_marks_available": "No Marks Found",
+  "no_marks_desc": "No marks have been recorded for this student yet.",
+  "user_not_found": "User not found",
+  "failed_to_load_user": "Failed to load user",
+  "failed_to_load_marks": "Failed to load marks"
 }

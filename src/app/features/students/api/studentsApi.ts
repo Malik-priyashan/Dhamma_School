@@ -66,3 +66,41 @@ export async function updateStudent(id: string, data: any): Promise<StudentDTO> 
 
   return res.json();
 }
+
+export async function promoteStudentGrades(): Promise<{ message: string; graduatedCount: number }> {
+  const base = ((process.env.NEXT_PUBLIC_BACKEND_URL) || (typeof window !== 'undefined' ? window.location.origin : '')).replace(/\/$/, '');
+  const url = `${base}/student/promote-grades`;
+
+  const res = await fetch(url, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => null);
+    throw new Error(text || `Failed to promote student grades with status ${res.status}`);
+  }
+
+  return res.json();
+}
+
+export async function fetchMyStudents(): Promise<StudentDTO[]> {
+  const base = ((process.env.NEXT_PUBLIC_BACKEND_URL) || (typeof window !== 'undefined' ? window.location.origin : '')).replace(/\/$/, '');
+  const url = `${base}/student/my-students`;
+
+  const res = await fetch(url, {
+    method: 'GET',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => null);
+    throw new Error(text || `Failed to fetch my students with status ${res.status}`);
+  }
+
+  const data = await res.json();
+  return Array.isArray(data) ? data : [];
+}
+

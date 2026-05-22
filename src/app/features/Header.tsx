@@ -111,7 +111,7 @@ export default function Header() {
             <button onClick={() => go("/")}
                     className="flex items-center gap-3 cursor-pointer" aria-label={t('home')}>
               <div className="w-10 h-10 md:w-12 md:h-12 rounded-full overflow-hidden flex-shrink-0 shadow bg-white p-1">
-                <Image src="/Screenshot%20(801).png" alt="logo" width={44} height={44} />
+                <Image src="/logo/logo.jpeg" alt="logo" width={44} height={44} />
               </div>
             </button>
 
@@ -121,6 +121,7 @@ export default function Header() {
                 { path: '/student/prefect-board', label: t('prefect_board') || 'Prefect Board', studentOnly: true },
                 { path: '/student/announcing', label: t('announcing') || 'Announcing', studentOnly: true },
                 { path: '/student/gallery', label: t('gallery'), studentOnly: true },
+                { path: '/student/marks', label: t('marks') || 'Marks', studentOnly: true },
               ]
               .filter(link => !link.studentOnly || userRole === 'STUDENT')
               .map(({ path, label }) => {
@@ -222,6 +223,7 @@ export default function Header() {
               { path: '/student/prefect-board', label: t('prefect_board') || 'Prefect Board', studentOnly: true },
               { path: '/student/announcing', label: t('announcing') || 'Announcing', studentOnly: true },
               { path: '/student/gallery', label: t('gallery'), studentOnly: true },
+              { path: '/student/marks', label: t('marks') || 'Marks', studentOnly: true },
             ]
             .filter(link => {
               if (link.studentOnly && userRole !== 'STUDENT') return false;

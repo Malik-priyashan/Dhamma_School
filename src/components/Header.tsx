@@ -38,7 +38,7 @@ export default function Header() {
             <button onClick={() => go("/")}
                     className="flex items-center gap-3 cursor-pointer" aria-label={t('home')}>
               <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 shadow bg-white p-1">
-                <Image src="/Screenshot%20(801).png" alt="logo" width={44} height={44} />
+                <Image src="/logo/logo.jpeg" alt="logo" width={44} height={44} />
               </div>
             </button>
 

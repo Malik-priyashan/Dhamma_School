@@ -24,3 +24,54 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+.student-registration-form label > span {
+  color: #334155;
+  font-weight: 700;
+}
+
+.student-registration-form input:not([type="checkbox"]):not([type="file"]),
+.student-registration-form select,
+.student-registration-form textarea {
+  min-height: 46px;
+  border-color: #cbd5e1 !important;
+  border-radius: 1rem !important;
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.05) !important;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+}
+
+.student-registration-form textarea {
+  min-height: 96px;
+}
+
+.student-registration-form input:not([type="checkbox"]):not([type="file"]):focus,
+.student-registration-form select:focus,
+.student-registration-form textarea:focus {
+  border-color: #0284c7 !important;
+  background-color: #ffffff !important;
+  box-shadow: 0 0 0 4px rgb(14 165 233 / 0.14) !important;
+  outline: none;
+}
+
+.student-registration-form input[type="checkbox"] {
+  accent-color: #0284c7;
+}
+
+.student-toast-progress {
+  animation-name: student-toast-fill;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+  width: 0;
+}
+
+@keyframes student-toast-fill {
+  from {
+    width: 0;
+  }
+
+  to {
+    width: 100%;
+  }
+}
