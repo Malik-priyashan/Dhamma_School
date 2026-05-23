@@ -8,10 +8,13 @@ export async function DELETE(req: NextRequest, _args: { params: Promise<{ path: 
 export async function OPTIONS(req: NextRequest, _args: { params: Promise<{ path: string[] }> }) { return proxyRequest(req, await _args.params); }
 
 async function proxyRequest(req: NextRequest, _params: { path: string[] }) {
-  // Use the explicitly provided target URL or default back to whatever the backend URL was originally
-  const targetHost = process.env.PROXY_TARGET_BACKEND_URL || 'https://dhamma-backend.vercel.app'; 
-  
-  const targetUrl = new URL(req.nextUrl.pathname.replace(/^\/api\/proxy/, ''), targetHost);
+  // Keep any backend base path (for example "/api") when forwarding.
+  const targetHost = process.env.PROXY_TARGET_BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'https://dhamma-backend.vercel.app';
+  const targetUrl = new URL(targetHost);
+  const basePath = targetUrl.pathname.replace(/\/$/, '');
+  const forwardPath = (_params.path || []).join('/');
+  const mergedPath = `${basePath}/${forwardPath}`.replace(/\/+/g, '/');
+  targetUrl.pathname = mergedPath.startsWith('/') ? mergedPath : `/${mergedPath}`;
   targetUrl.search = req.nextUrl.search;
 
   const headers = new Headers(req.headers);
