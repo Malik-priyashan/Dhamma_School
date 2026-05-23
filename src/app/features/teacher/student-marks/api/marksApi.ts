@@ -1,8 +1,7 @@
 import { MarkDTO } from "../types/marks.types";
 
 const getBaseUrl = () => {
-  const base = (process.env.NEXT_PUBLIC_BACKEND_URL as string) || '';
-  return `${base.replace(/\/$/, '')}/marks`;
+  return '/api/proxy/marks';
 };
 
 function mapToFrontend(item: any): MarkDTO {
@@ -47,6 +46,7 @@ export async function fetchMarksByStudentAndYear(studentId: number | string, aca
     const res = await fetch(`${getBaseUrl()}?studentId=${studentId}&year=${academicYear}`, {
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
+      cache: 'no-store',
     });
     if (!res.ok) {
       if (res.status === 404) return null;
@@ -65,6 +65,7 @@ export async function fetchMarksByStudent(studentId: number | string): Promise<M
     const res = await fetch(`${getBaseUrl()}?studentId=${studentId}`, {
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
+      cache: 'no-store',
     });
     if (!res.ok) {
       if (res.status === 404) return [];
@@ -84,6 +85,7 @@ export async function createMark(payload: Partial<MarkDTO>): Promise<MarkDTO> {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
+    cache: 'no-store',
     body: JSON.stringify(mapToBackend(payload)),
   });
   if (!res.ok) {
@@ -99,6 +101,7 @@ export async function updateMark(id: number | string, payload: Partial<MarkDTO>)
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
+    cache: 'no-store',
     body: JSON.stringify(mapToBackend(payload)),
   });
   if (!res.ok) {

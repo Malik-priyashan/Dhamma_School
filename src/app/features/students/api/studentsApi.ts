@@ -1,17 +1,22 @@
 import { StudentDTO } from "../../studentform/types/types";
 
+const STUDENT_PROXY_BASE = '/api/proxy/student';
+
+function studentApi(path = '') {
+  return `${STUDENT_PROXY_BASE}${path}`;
+}
+
 export async function fetchAllStudents(grade?: string, name?: string): Promise<StudentDTO[]> {
-  const base = ((process.env.NEXT_PUBLIC_BACKEND_URL) || (typeof window !== 'undefined' ? window.location.origin : '')).replace(/\/$/, '');
-  
   let queryString = 'limit=1000&';
   if (grade && grade.trim()) queryString += `grade=${encodeURIComponent(grade.trim())}&`;
   if (name && name.trim()) queryString += `name=${encodeURIComponent(name.trim())}&`;
-  
-  const url = `${base}/student${queryString ? `?${queryString.slice(0, -1)}` : ''}`;
+
+  const url = `${studentApi()}${queryString ? `?${queryString.slice(0, -1)}` : ''}`;
 
   const res = await fetch(url, {
     method: 'GET',
     credentials: 'include',
+    cache: 'no-store',
     headers: { 'Content-Type': 'application/json' },
   });
 
@@ -28,12 +33,12 @@ export async function fetchAllStudents(grade?: string, name?: string): Promise<S
 }
 
 export async function getStudentById(id: string): Promise<StudentDTO | null> {
-  const base = ((process.env.NEXT_PUBLIC_BACKEND_URL) || (typeof window !== 'undefined' ? window.location.origin : '')).replace(/\/$/, '');
-  const url = `${base}/student/${id}`;
+  const url = studentApi(`/${id}`);
 
   const res = await fetch(url, {
     method: 'GET',
     credentials: 'include',
+    cache: 'no-store',
     headers: { 'Content-Type': 'application/json' },
   });
 
@@ -47,14 +52,14 @@ export async function getStudentById(id: string): Promise<StudentDTO | null> {
 }
 
 export async function updateStudent(id: string, data: any): Promise<StudentDTO> {
-  const base = ((process.env.NEXT_PUBLIC_BACKEND_URL) || (typeof window !== 'undefined' ? window.location.origin : '')).replace(/\/$/, '');
-  const url = `${base}/student/${id}`;
+  const url = studentApi(`/${id}`);
 
   const isFormData = data instanceof FormData;
 
   const res = await fetch(url, {
     method: 'PATCH',
     credentials: 'include',
+    cache: 'no-store',
     headers: isFormData ? {} : { 'Content-Type': 'application/json' },
     body: isFormData ? data : JSON.stringify(data),
   });
@@ -68,12 +73,12 @@ export async function updateStudent(id: string, data: any): Promise<StudentDTO> 
 }
 
 export async function promoteStudentGrades(): Promise<{ message: string; graduatedCount: number }> {
-  const base = ((process.env.NEXT_PUBLIC_BACKEND_URL) || (typeof window !== 'undefined' ? window.location.origin : '')).replace(/\/$/, '');
-  const url = `${base}/student/promote-grades`;
+  const url = studentApi('/promote-grades');
 
   const res = await fetch(url, {
     method: 'POST',
     credentials: 'include',
+    cache: 'no-store',
     headers: { 'Content-Type': 'application/json' },
   });
 
@@ -86,12 +91,12 @@ export async function promoteStudentGrades(): Promise<{ message: string; graduat
 }
 
 export async function fetchMyStudents(): Promise<StudentDTO[]> {
-  const base = ((process.env.NEXT_PUBLIC_BACKEND_URL) || (typeof window !== 'undefined' ? window.location.origin : '')).replace(/\/$/, '');
-  const url = `${base}/student/my-students`;
+  const url = studentApi('/my-students');
 
   const res = await fetch(url, {
     method: 'GET',
     credentials: 'include',
+    cache: 'no-store',
     headers: { 'Content-Type': 'application/json' },
   });
 
