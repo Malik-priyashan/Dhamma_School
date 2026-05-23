@@ -1,13 +1,22 @@
 import { StudentDTO } from "../../studentform/types/types";
 
+const STUDENT_REQUEST_PROXY_BASE = '/api/proxy/student-request';
+const STUDENT_PROXY_BASE = '/api/proxy/student';
+
+function studentRequestApi(path = '') {
+  return `${STUDENT_REQUEST_PROXY_BASE}${path}`;
+}
+
+function studentApi(path = '') {
+  return `${STUDENT_PROXY_BASE}${path}`;
+}
+
 export async function fetchAllStudentRequests(
   pageParam?: string | number,
   limitParam?: string | number,
   status?: string,
   createdDate?: string
 ): Promise<any> {
-  const base = ((process.env.NEXT_PUBLIC_BACKEND_URL) || (typeof window !== 'undefined' ? window.location.origin : '')).replace(/\/$/, '');
-  
   const params = new URLSearchParams();
   if (pageParam) params.append('page', String(pageParam));
   if (limitParam) params.append('limit', String(limitParam));
@@ -15,11 +24,12 @@ export async function fetchAllStudentRequests(
   if (createdDate) params.append('createdDate', createdDate);
   
   const queryStr = params.toString();
-  const url = `${base}/student-request${queryStr ? `?${queryStr}` : ''}`;
+  const url = `${studentRequestApi()}${queryStr ? `?${queryStr}` : ''}`;
 
   const res = await fetch(url, {
     method: 'GET',
     credentials: 'include',
+    cache: 'no-store',
     headers: { 'Content-Type': 'application/json' },
   });
 
@@ -32,12 +42,12 @@ export async function fetchAllStudentRequests(
 }
 
 export async function acceptStudentRequest(id: string): Promise<any> {
-  const base = ((process.env.NEXT_PUBLIC_BACKEND_URL) || (typeof window !== 'undefined' ? window.location.origin : '')).replace(/\/$/, '');
-  const url = `${base}/student-request/${id}/accept`;
+  const url = studentRequestApi(`/${id}/accept`);
 
   const res = await fetch(url, {
     method: 'PATCH',
     credentials: 'include',
+    cache: 'no-store',
     headers: { 'Content-Type': 'application/json' },
   });
 
@@ -50,12 +60,12 @@ export async function acceptStudentRequest(id: string): Promise<any> {
 }
 
 export async function rejectStudentRequest(id: string): Promise<any> {
-  const base = ((process.env.NEXT_PUBLIC_BACKEND_URL) || (typeof window !== 'undefined' ? window.location.origin : '')).replace(/\/$/, '');
-  const url = `${base}/student-request/${id}/reject`;
+  const url = studentRequestApi(`/${id}/reject`);
 
   const res = await fetch(url, {
     method: 'PATCH',
     credentials: 'include',
+    cache: 'no-store',
     headers: { 'Content-Type': 'application/json' },
   });
 
@@ -68,12 +78,12 @@ export async function rejectStudentRequest(id: string): Promise<any> {
 }
 
 export async function createStudent(data: StudentDTO): Promise<any> {
-  const base = ((process.env.NEXT_PUBLIC_BACKEND_URL) || (typeof window !== 'undefined' ? window.location.origin : '')).replace(/\/$/, '');
-  const url = `${base}/student`;
+  const url = studentApi();
 
   const res = await fetch(url, {
     method: 'POST',
     credentials: 'include',
+    cache: 'no-store',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   });
@@ -87,12 +97,12 @@ export async function createStudent(data: StudentDTO): Promise<any> {
 }
 
 export async function updateStudent(id: string, data: any): Promise<any> {
-  const base = ((process.env.NEXT_PUBLIC_BACKEND_URL) || (typeof window !== 'undefined' ? window.location.origin : '')).replace(/\/$/, '');
-  const url = `${base}/student/${id}`;
+  const url = studentApi(`/${id}`);
 
   const res = await fetch(url, {
     method: 'PATCH',
     credentials: 'include',
+    cache: 'no-store',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   });
@@ -106,12 +116,12 @@ export async function updateStudent(id: string, data: any): Promise<any> {
 }
 
 export async function getStudentById(id: string): Promise<any> {
-  const base = ((process.env.NEXT_PUBLIC_BACKEND_URL) || (typeof window !== 'undefined' ? window.location.origin : '')).replace(/\/$/, '');
-  const url = `${base}/student/${id}`;
+  const url = studentApi(`/${id}`);
 
   const res = await fetch(url, {
     method: 'GET',
     credentials: 'include',
+    cache: 'no-store',
     headers: { 'Content-Type': 'application/json' },
   });
 
@@ -125,12 +135,12 @@ export async function getStudentById(id: string): Promise<any> {
 }
 
 export async function fetchAllStudents(): Promise<any[]> {
-  const base = ((process.env.NEXT_PUBLIC_BACKEND_URL) || (typeof window !== 'undefined' ? window.location.origin : '')).replace(/\/$/, '');
-  const url = `${base}/student?limit=1000`;
+  const url = `${studentApi()}?limit=1000`;
 
   const res = await fetch(url, {
     method: 'GET',
     credentials: 'include',
+    cache: 'no-store',
     headers: { 'Content-Type': 'application/json' },
   });
 

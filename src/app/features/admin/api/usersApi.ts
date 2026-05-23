@@ -1,11 +1,17 @@
+const USERS_PROXY_BASE = '/api/proxy/users';
+
+function usersApi(path = '') {
+  return `${USERS_PROXY_BASE}${path}`;
+}
+
 export async function fetchAllTeachers() {
-  const base = (process.env.NEXT_PUBLIC_BACKEND_URL as string) || '';
-  const target = `${base.replace(/\/$/, '')}/users/teachers`;
+  const target = usersApi('/teachers');
 
   try {
     const res = await fetch(target, {
       method: 'GET',
       credentials: 'include',
+      cache: 'no-store',
     });
 
     if (!res.ok) {
@@ -20,13 +26,13 @@ export async function fetchAllTeachers() {
 }
 
 export async function updateTeacherStatus(id: string, isActive: boolean) {
-  const base = (process.env.NEXT_PUBLIC_BACKEND_URL as string) || '';
-  const target = `${base.replace(/\/$/, '')}/users/${id}/status`;
+  const target = usersApi(`/${id}/status`);
 
   try {
     const res = await fetch(target, {
       method: 'PATCH',
       credentials: 'include',
+      cache: 'no-store',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ isActive }),
     });
@@ -43,13 +49,13 @@ export async function updateTeacherStatus(id: string, isActive: boolean) {
 }
 
 export async function deleteUser(id: string) {
-  const base = (process.env.NEXT_PUBLIC_BACKEND_URL as string) || '';
-  const target = `${base.replace(/\/$/, '')}/users/${id}`;
+  const target = usersApi(`/${id}`);
 
   try {
     const res = await fetch(target, {
       method: 'DELETE',
       credentials: 'include',
+      cache: 'no-store',
     });
 
     if (!res.ok) {
