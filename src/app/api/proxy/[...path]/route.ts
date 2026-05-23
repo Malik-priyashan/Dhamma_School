@@ -8,14 +8,25 @@ export async function DELETE(req: NextRequest, _args: { params: Promise<{ path: 
 export async function OPTIONS(req: NextRequest, _args: { params: Promise<{ path: string[] }> }) { return proxyRequest(req, await _args.params); }
 
 async function proxyRequest(req: NextRequest, _params: { path: string[] }) {
-  // Keep any backend base path (for example "/api") when forwarding.
+  // Keep backend base path (for example "/api") and retry common hosted variants.
   const targetHost = process.env.PROXY_TARGET_BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'https://dhamma-backend.vercel.app';
-  const targetUrl = new URL(targetHost);
-  const basePath = targetUrl.pathname.replace(/\/$/, '');
   const forwardPath = (_params.path || []).join('/');
-  const mergedPath = `${basePath}/${forwardPath}`.replace(/\/+/g, '/');
-  targetUrl.pathname = mergedPath.startsWith('/') ? mergedPath : `/${mergedPath}`;
-  targetUrl.search = req.nextUrl.search;
+
+  const configured = new URL(targetHost);
+  const configuredBasePath = configured.pathname.replace(/\/$/, '');
+  const candidateBasePaths = Array.from(new Set([
+    configuredBasePath,
+    ...(configuredBasePath ? [] : ['/api']),
+    ...(configuredBasePath === '/api' ? [''] : []),
+  ]));
+
+  const candidateUrls = candidateBasePaths.map((basePath) => {
+    const candidate = new URL(targetHost);
+    const mergedPath = `${basePath}/${forwardPath}`.replace(/\/+/g, '/');
+    candidate.pathname = mergedPath.startsWith('/') ? mergedPath : `/${mergedPath}`;
+    candidate.search = req.nextUrl.search;
+    return candidate.toString();
+  });
 
   const headers = new Headers(req.headers);
   headers.delete('host'); // Let fetch set the correct host header
@@ -23,12 +34,30 @@ async function proxyRequest(req: NextRequest, _params: { path: string[] }) {
 
   try {
     const isBodyAllowed = !['GET', 'HEAD'].includes(req.method);
-    const response = await fetch(targetUrl.toString(), {
-      method: req.method,
-      headers,
-      body: isBodyAllowed ? await req.arrayBuffer() : undefined,
-      redirect: 'manual',
-    });
+    const requestBody = isBodyAllowed ? await req.arrayBuffer() : undefined;
+    let response: Response | null = null;
+
+    for (let i = 0; i < candidateUrls.length; i++) {
+      const candidateUrl = candidateUrls[i];
+      const attempted = await fetch(candidateUrl, {
+        method: req.method,
+        headers,
+        body: requestBody,
+        redirect: 'manual',
+      });
+
+      response = attempted;
+      if (attempted.status !== 404 || i === candidateUrls.length - 1) {
+        break;
+      }
+    }
+
+    if (!response) {
+      return new Response(JSON.stringify({ error: 'Proxy Request Failed', details: 'No response from backend candidates' }), {
+        status: 502,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
 
     const proxyHeaders = new Headers(response.headers);
     
