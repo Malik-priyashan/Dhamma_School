@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Image from "next/image";
-import { logoutUser } from "../auth/api/authApi";
+import { clearClientAuthState, logoutUser } from "../auth/api/authApi";
 
 interface TeacherSidebarProps {
   setIsAuthenticated: (val: boolean) => void;
@@ -26,18 +26,21 @@ export default function TeacherSidebar({ setIsAuthenticated }: TeacherSidebarPro
     } catch (e) {
       console.error("Backend logout failed:", e);
     }
+
+    try {
+      await fetch('/api/frontend-logout', {
+        method: 'POST',
+        cache: 'no-store',
+      });
+    } catch (e) {
+      console.error("Frontend cookie native clear failed:", e);
+    }
     
-    // Clear all cookies
-    document.cookie.split(";").forEach((c) => {
-      document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
-    });
-    
-    localStorage.clear();
-    sessionStorage.clear();
+    clearClientAuthState();
     setIsAuthenticated(false);
     
     // Hard refresh to login page
-    window.location.href = '/en/login';
+    window.location.replace('/en/login');
   };
 
   const navLinks = [

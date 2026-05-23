@@ -1,11 +1,44 @@
+const AUTH_PROXY_BASE = '/api/proxy/auth';
+const AUTH_COOKIE_NAMES = ['accessToken', 'auth_token', 'userRole'] as const;
+
+function authTarget(path: string) {
+  return `${AUTH_PROXY_BASE}/${path}`;
+}
+
+export function clearClientAuthState() {
+  if (typeof window === 'undefined') return;
+
+  const cookieNames = new Set<string>(AUTH_COOKIE_NAMES);
+  document.cookie.split(';').forEach((chunk) => {
+    const name = chunk.trim().split('=')[0];
+    if (name) cookieNames.add(name);
+  });
+
+  const expired = 'Thu, 01 Jan 1970 00:00:00 GMT';
+  cookieNames.forEach((name) => {
+    document.cookie = `${name}=; expires=${expired}; path=/`;
+    document.cookie = `${name}=; Max-Age=0; path=/`;
+  });
+
+  try {
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('accessToken');
+  } catch {}
+
+  try {
+    sessionStorage.removeItem('userRole');
+    sessionStorage.removeItem('accessToken');
+  } catch {}
+}
+
 export async function registerUser(payload: unknown) {
-  const base = (process.env.NEXT_PUBLIC_BACKEND_URL as string) || '';
-  const target = `${base.replace(/\/$/, '')}/auth/register`;
+  const target = authTarget('register');
 
   try {
     const res = await fetch(target, {
       method: 'POST',
       credentials: 'include',
+      cache: 'no-store',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
@@ -33,13 +66,13 @@ export async function registerUser(payload: unknown) {
 }
 
 export async function loginUser(payload: unknown) {
-  const base = (process.env.NEXT_PUBLIC_BACKEND_URL as string) || '';
-  const target = `${base.replace(/\/$/, '')}/auth/login`;
+  const target = authTarget('login');
 
   try {
     const res = await fetch(target, {
       method: 'POST',
       credentials: 'include',
+      cache: 'no-store',
       headers: {
         'Content-Type': 'application/json',
         ...(typeof navigator !== 'undefined' ? { 'user-agent': navigator.userAgent } : {})
@@ -79,13 +112,13 @@ export async function loginUser(payload: unknown) {
 }
 
 export async function fetchCurrentUser() {
-  const base = (process.env.NEXT_PUBLIC_BACKEND_URL as string) || '';
-  const target = `${base.replace(/\/$/, '')}/auth/me`;
+  const target = authTarget('me');
 
   try {
     const res = await fetch(target, {
       method: 'GET',
       credentials: 'include',
+      cache: 'no-store',
     });
     
     if (!res.ok) {
@@ -99,13 +132,13 @@ export async function fetchCurrentUser() {
 }
 
 export async function logoutUser() {
-  const base = (process.env.NEXT_PUBLIC_BACKEND_URL as string) || '';
-  const target = `${base.replace(/\/$/, '')}/auth/logout`;
+  const target = authTarget('logout');
 
   try {
     const res = await fetch(target, {
       method: 'POST',
       credentials: 'include',
+      cache: 'no-store',
     });
     
     if (!res.ok) {

@@ -1,18 +1,39 @@
-import { cookies } from 'next/headers';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function POST() {
+const AUTH_COOKIE_NAMES = ['accessToken', 'auth_token', 'userRole'];
+
+export async function POST(req: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    // Get all cookies
-    const allCookies = cookieStore.getAll();
-    
-    // Delete every single cookie stored on the frontend domain
+    const response = NextResponse.json(
+      { success: true, cleared: AUTH_COOKIE_NAMES.length },
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          Pragma: 'no-cache',
+          Expires: '0',
+        },
+      }
+    );
+
+    const allCookies = req.cookies.getAll();
+    const cookieNames = new Set<string>(AUTH_COOKIE_NAMES);
+
     for (const cookie of allCookies) {
-      cookieStore.delete(cookie.name);
+      cookieNames.add(cookie.name);
     }
-    
-    return NextResponse.json({ success: true, cleared: allCookies.length });
+
+    const expired = new Date(0);
+    for (const name of cookieNames) {
+      response.cookies.set({
+        name,
+        value: '',
+        path: '/',
+        expires: expired,
+        maxAge: 0,
+      });
+    }
+
+    return response;
   } catch (error) {
     return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
   }
