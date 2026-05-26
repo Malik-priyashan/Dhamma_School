@@ -182,6 +182,19 @@ function ContentEditorModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (!isOpen) return;
+
+    setTopic(item?.topic || "");
+    setTopicSinhala(item?.topicSi || "");
+    setDescription(item?.description || "");
+    setDescriptionSinhala(item?.descriptionSi || "");
+    setHappenedDate(item?.happenedDate ? toDateInputValue(item.happenedDate) : "");
+    setImageFile(null);
+    setImagePreview(item?.image || "");
+    setError(null);
+  }, [isOpen, item]);
+
   if (!isOpen) return null;
 
   const handleImageChange = (nextFile: File | null) => {
