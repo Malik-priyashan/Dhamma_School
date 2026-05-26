@@ -5,7 +5,7 @@ import { useRouter, usePathname } from "next/navigation";
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import { locales } from "../../config";
-import { clearClientAuthState, fetchCurrentUser, logoutUser } from "./auth/api/authApi";
+import { fetchCurrentUser, logoutUser } from "./auth/api/authApi";
 import { getUserRole } from "../../lib/authUtils";
 import TeacherSidebar from "./teacher/TeacherSidebar";
 import AdminSidebar from "./admin/AdminSidebar";
@@ -81,30 +81,6 @@ export default function Header() {
     }
   }
 
-  async function handleLogout(nextPath: string) {
-    try {
-      await logoutUser();
-    } catch (e) {
-      console.error("Backend logout failed:", e);
-    }
-
-    try {
-      await fetch('/api/frontend-logout', {
-        method: 'POST',
-        cache: 'no-store',
-      });
-    } catch (e) {
-      console.error("Frontend cookie native clear failed:", e);
-    }
-
-    clearClientAuthState();
-    setIsAuthenticated(false);
-    setUserRole(null);
-    setMobileMenuOpen(false);
-    router.replace(nextPath);
-    router.refresh();
-  }
-
   // No inline popup form here — navigation goes to the competitions page.
   const isAuthPage = pathname?.includes('/login') || pathname?.includes('/register');
   if (isAuthPage) {
@@ -120,7 +96,7 @@ export default function Header() {
   }
   return (
     <header className="fixed top-6 left-0 right-0 z-50 pointer-events-none">
-      <nav className="mx-auto max-w-7xl w-[calc(100%-1.5rem)] md:w-[calc(100%-2rem)] pointer-events-auto bg-gradient-to-r from-white/98 via-blue-50/95 to-white/98 backdrop-blur-xl shadow-2xl shadow-blue-200/30 rounded-3xl md:rounded-full px-4 md:px-8 py-4 border-2 border-slate-300/60">
+      <nav className="mx-auto max-w-7xl w-[calc(100%-1.5rem)] md:w-[calc(100%-2rem)] pointer-events-auto bg-gradient-to-r from-white/95 via-blue-50/60 to-white/95 backdrop-blur-2xl backdrop-saturate-125 shadow-2xl shadow-blue-200/30 rounded-3xl md:rounded-full px-4 md:px-8 py-4 border border-white/30">
         <div className="flex items-center justify-between px-1 md:px-3">
           <div className="flex items-center gap-2 md:gap-6">
             {/* Mobile menu button */}
@@ -133,13 +109,13 @@ export default function Header() {
             </button>
 
             <button onClick={() => go("/")}
-                    className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity flex-shrink-0" aria-label={t('home')}>
-              <div className="w-10 h-10 md:w-11 md:h-11 rounded-full overflow-hidden flex-shrink-0 shadow-lg bg-white border-2 border-slate-300/60 hover:shadow-xl hover:shadow-blue-300/40 transition-all duration-300">
+                    className="flex items-center gap-3 cursor-pointer hover:opacity-95 transition-opacity transform-gpu hover:-translate-y-0.5 flex-shrink-0" aria-label={t('home')}>
+              <div className="w-10 h-10 md:w-12 md:h-12 rounded-full overflow-hidden flex-shrink-0 shadow-lg bg-white border-2 border-slate-200/70 hover:shadow-2xl hover:shadow-blue-300/30 transition-all duration-300 ring-1 ring-white/60">
                 <Image src="/logo/logo.jpeg" alt="logo" width={50} height={50} className="w-full h-full object-contain" />
               </div>
             </button>
 
-            <ul className="hidden md:flex items-center text-xs font-medium absolute left-1/2 transform -translate-x-1/2">
+            <ul className="hidden md:flex items-center text-sm font-medium absolute left-1/2 transform -translate-x-1/2 space-x-2">
               {[
                 { path: '/', label: t('home') },
                 { path: '/student/prefect-board', label: t('prefect_board') || 'Prefect Board', studentOnly: true },
@@ -150,21 +126,23 @@ export default function Header() {
               .filter(link => !link.studentOnly || userRole === 'STUDENT')
               .map(({ path, label }) => {
                 const base = path === '/' ? `/${locale}` : `/${locale}${path}`;
-                const isActive = pathname === base || pathname?.startsWith(base + '/');
+                const isActive = path === '/'
+                  ? pathname === base
+                  : (pathname === base || pathname?.startsWith(base + '/'));
 
                 return (
                   <li key={path} className="mx-0.5">
                     <button
                       onClick={() => go(path)}
-                      className={`relative px-2 py-2 rounded-lg transition-all duration-300 ${
+                      className={`relative px-3 py-2 rounded-full transition-all duration-300 flex items-center gap-2 ${
                         isActive 
-                          ? 'text-blue-700 font-bold' 
-                          : 'text-slate-700 hover:text-slate-900'
+                          ? 'bg-gradient-to-r from-blue-100 to-blue-50 text-blue-800 font-semibold shadow-md' 
+                          : 'text-slate-700 hover:text-slate-900 hover:bg-white/40'
                       }`}
                     >
-                      {label}
+                      <span className="leading-none">{label}</span>
                       {isActive && (
-                        <span className="absolute inset-x-0 -bottom-1 h-1 bg-gradient-to-r from-blue-500 to-blue-700 rounded-full" />
+                        <span className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-10 h-1 bg-gradient-to-r from-blue-500 to-blue-700 rounded-full shadow-sm" />
                       )}
                     </button>
                   </li>
@@ -177,7 +155,35 @@ export default function Header() {
             <div className="hidden sm:block">
               {isAuthenticated ? (
                 <button
-                  onClick={() => handleLogout(`/${locale}/login`)}
+                  onClick={async () => {
+                    try {
+                      await logoutUser();
+                    } catch (e) {
+                      console.error("Backend logout failed:", e);
+                    }
+                    
+                    try {
+                      await fetch('/api/frontend-logout', { method: 'POST' });
+                    } catch (e) {
+                      console.error("Frontend cookie native clear failed:", e);
+                    }
+                    
+                    // Clear all accessible JS cookies
+                    document.cookie.split(";").forEach((c) => {
+                      const name = c.replace(/^ +/, "").split("=")[0];
+                      if (name) {
+                        document.cookie = name + "=;expires=" + new Date(0).toUTCString() + ";path=/";
+                        document.cookie = name + "=;expires=" + new Date(0).toUTCString() + ";path=/;domain=" + window.location.hostname;
+                      }
+                    });
+                    
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    setIsAuthenticated(false);
+                    
+                    // Hard refresh to login page preserving locale
+                    window.location.href = `/${locale}/login`;
+                  }}
                   className="bg-gradient-to-r from-red-500 to-red-600 text-white px-4 md:px-5 py-1.5 rounded-full text-xs font-semibold hover:from-red-600 hover:to-red-700 shadow-lg hover:shadow-red-300/50 transition-all duration-300 hover:scale-105"
                 >
                   {t('logout')}
@@ -223,7 +229,7 @@ export default function Header() {
         {/* Mobile dropdown menu */}
         <div className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out ${mobileMenuOpen ? 'max-h-96 mt-4 opacity-100' : 'max-h-0 opacity-0'}`}>
           <div className="flex flex-col gap-2 pt-4 border-t-2 border-slate-300/60 pb-2">
-            {[
+              {[
               { path: '/login', label: t('login'), authOnly: false, hideAuth: true },
               { path: '/', label: t('home'), authOnly: false, hideAuth: false },
               { path: '/student/prefect-board', label: t('prefect_board') || 'Prefect Board', studentOnly: true },
@@ -238,7 +244,9 @@ export default function Header() {
             })
             .map(({ path, label }) => {
               const base = path === '/' ? `/${locale}` : `/${locale}${path}`;
-              const isActive = pathname === base || pathname?.startsWith(base + '/');
+              const isActive = path === '/'
+                ? pathname === base
+                : (pathname === base || pathname?.startsWith(base + '/'));
 
               return (
                 <button
@@ -257,7 +265,15 @@ export default function Header() {
             
             {isAuthenticated && (
               <button
-                onClick={() => handleLogout(`/${locale}/login`)}
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  logoutUser().finally(() => {
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    setIsAuthenticated(false);
+                    window.location.href = `/${locale}/login`;
+                  });
+                }}
                 className="px-4 py-2.5 mt-3 text-xs text-left text-white font-semibold bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 rounded-lg transition-all border-l-4 border-red-700"
               >
                 {t('logout')}

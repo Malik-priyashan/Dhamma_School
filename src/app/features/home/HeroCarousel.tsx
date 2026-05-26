@@ -32,29 +32,6 @@ export default function HeroCarousel({
         ))}
       </div>
 
-      <div className="absolute left-0 right-0 bottom-8 flex items-center justify-center">
-        <div className="bg-black/30 backdrop-blur-sm px-1 py-0.5 rounded-full border border-white/10">
-          <div className="flex gap-2 items-center justify-center">
-            {images.map((_, i) => {
-              const isActive = i === index;
-              const indicatorClass = isActive
-                ? 'w-9 h-1 rounded-full bg-white'
-                : 'w-2 h-1 rounded-full bg-white/60';
-
-              return (
-                <button
-                  key={i}
-                  aria-label={`Go to slide ${i + 1}`}
-                  onClick={() => setIndex(i)}
-                  className="p-0.5 focus:outline-none"
-                >
-                  <span className={`block transition-all duration-300 ease-in-out ${indicatorClass}`} />
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
     </div>
   );
 }

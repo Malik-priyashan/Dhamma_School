@@ -51,6 +51,8 @@ export default function AdminSidebar({ setIsAuthenticated }: AdminSidebarProps) 
     { path: '/admin/student-marks', label: 'Student Marks' },
     { path: '/admin/prefects', label: 'Prefect Board' },
     { path: '/admin/announcing', label: 'Announcing' },
+    { path: '/admin/events', label: 'Events' },
+    { path: '/admin/news', label: 'News' },
   ];
 
   return (
