@@ -1,5 +1,30 @@
 import { NextRequest } from 'next/server';
 
+const DEFAULT_PRODUCTION_BACKEND_URL = 'https://dhamma-backend.vercel.app';
+
+function isLocalBackendUrl(value: string) {
+  try {
+    const url = new URL(value);
+    return ['localhost', '127.0.0.1', '::1'].includes(url.hostname);
+  } catch {
+    return false;
+  }
+}
+
+function resolveBackendBaseUrl() {
+  const configured = process.env.PROXY_TARGET_BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || '';
+
+  if (configured && (!isLocalBackendUrl(configured) || process.env.NODE_ENV !== 'production')) {
+    return configured;
+  }
+
+  if (process.env.NODE_ENV === 'production') {
+    return DEFAULT_PRODUCTION_BACKEND_URL;
+  }
+
+  return configured || DEFAULT_PRODUCTION_BACKEND_URL;
+}
+
 export async function GET(req: NextRequest, _args: { params: Promise<{ path: string[] }> }) { return proxyRequest(req, await _args.params); }
 export async function POST(req: NextRequest, _args: { params: Promise<{ path: string[] }> }) { return proxyRequest(req, await _args.params); }
 export async function PUT(req: NextRequest, _args: { params: Promise<{ path: string[] }> }) { return proxyRequest(req, await _args.params); }
@@ -9,7 +34,7 @@ export async function OPTIONS(req: NextRequest, _args: { params: Promise<{ path:
 
 async function proxyRequest(req: NextRequest, _params: { path: string[] }) {
   // Keep backend base path (for example "/api") and retry common hosted variants.
-  const targetHost = process.env.PROXY_TARGET_BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'https://dhamma-backend.vercel.app';
+  const targetHost = resolveBackendBaseUrl();
   const forwardPath = (_params.path || []).join('/');
 
   const configured = new URL(targetHost);
