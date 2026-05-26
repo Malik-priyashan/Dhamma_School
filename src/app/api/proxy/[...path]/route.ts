@@ -85,6 +85,10 @@ async function proxyRequest(req: NextRequest, _params: { path: string[] }) {
     }
 
     const proxyHeaders = new Headers(response.headers);
+    proxyHeaders.delete('content-encoding');
+    proxyHeaders.delete('content-length');
+    proxyHeaders.delete('transfer-encoding');
+    proxyHeaders.delete('connection');
     
     // THIS IS THE CRUCIAL PART FOR SAFARI:
     // Strip the "Domain=..." restriction from Set-Cookie headers 
