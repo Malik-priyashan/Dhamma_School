@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "../globals.css";
 import { NextIntlClientProvider } from "next-intl";
-import Header from "../../components/Header";
+import Header from "../features/Header";
 import { getMessages } from "../../i18n";
 import { defaultLocale } from "../../config";
 
@@ -33,13 +33,11 @@ export default async function LocaleLayout({
   const messages = await getMessages(locale);
 
   return (
-    <html lang={locale} className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col">
-        <NextIntlClientProvider messages={messages} locale={locale}>
-          <Header />
-          {children}
-        </NextIntlClientProvider>
-      </body>
-    </html>
+    <NextIntlClientProvider messages={messages} locale={locale}>
+      <div className={`${geistSans.variable} ${geistMono.variable} h-full antialiased min-h-full flex flex-col`} lang={locale}>
+        <Header />
+        {children}
+      </div>
+    </NextIntlClientProvider>
   );
 }
