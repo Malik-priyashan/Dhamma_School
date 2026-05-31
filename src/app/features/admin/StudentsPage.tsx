@@ -3,13 +3,122 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale } from "next-intl";
+import * as XLSX from "xlsx";
 import { fetchCurrentUser } from "../auth/api/authApi";
 import { getUserRole } from "../../../lib/authUtils";
 import { useStudents } from "../students/hooks/useStudents";
 import StudentCard from "../students/components/StudentCard";
 import { StudentDTO } from "../studentform/types/types";
 import LoadingPage from "../../components/ui/LoadingPage";
-import { promoteStudentGrades } from "../students/api/studentsApi";
+import { fetchAllStudents, promoteStudentGrades } from "../students/api/studentsApi";
+
+type ExportColumn = {
+  header: string;
+  value: (student: StudentDTO) => string | number | boolean;
+};
+
+function formatDate(value?: string | null): string {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return date.toLocaleDateString("en-CA");
+}
+
+function formatYesNo(value: unknown): string {
+  if (value === true || value === "YES") return "Yes";
+  if (value === false || value === "NO") return "No";
+  return "";
+}
+
+function formatBoolean(value: unknown): string {
+  if (value === true) return "Yes";
+  if (value === false) return "No";
+  return "";
+}
+
+function formatSiblings(value: unknown): string {
+  if (!value) return "";
+
+  const siblings = typeof value === "string"
+    ? (() => {
+        try {
+          const parsed = JSON.parse(value);
+          return Array.isArray(parsed) ? parsed : [];
+        } catch {
+          return [];
+        }
+      })()
+    : value;
+
+  if (!Array.isArray(siblings) || siblings.length === 0) return "";
+
+  return siblings
+    .map((sibling) => {
+      if (!sibling || typeof sibling !== "object") return "";
+      const record = sibling as { name?: string; grade?: string };
+      const name = record.name?.trim();
+      const grade = record.grade?.trim();
+
+      if (!name && !grade) return "";
+      if (name && grade) return `${name} (${grade})`;
+      return name || grade || "";
+    })
+    .filter(Boolean)
+    .join("; ");
+}
+
+const studentExportColumns: ExportColumn[] = [
+  { header: "ID", value: (student) => student.id ?? "" },
+  { header: "Full Name With Surname", value: (student) => student.fullNameWithSurname ?? "" },
+  { header: "Name With Initials", value: (student) => student.nameWithInitials ?? "" },
+  { header: "Date of Birth", value: (student) => formatDate(student.dob) },
+  { header: "Address", value: (student) => student.address ?? "" },
+  { header: "Phone 1", value: (student) => student.phone1 ?? "" },
+  { header: "Phone 2", value: (student) => student.phone2 ?? "" },
+  { header: "School", value: (student) => student.school ?? "" },
+  { header: "Earlier School", value: (student) => formatYesNo(student.earlierSchool) },
+  { header: "Earlier School Reason", value: (student) => student.earlierSchoolReason ?? "" },
+  { header: "Reason For Leave", value: (student) => student.reasonForLeave ?? "" },
+  { header: "Father Full Name", value: (student) => student.fatherFullName ?? "" },
+  { header: "Father Job", value: (student) => student.fatherJob ?? "" },
+  { header: "Father Job Address", value: (student) => student.fatherJobAddress ?? "" },
+  { header: "Mother Full Name", value: (student) => student.motherFullName ?? "" },
+  { header: "Mother Job", value: (student) => student.motherJob ?? "" },
+  { header: "Mother Job Address", value: (student) => student.motherJobAddress ?? "" },
+  { header: "Guardian Full Name", value: (student) => student.guardianFullName ?? "" },
+  { header: "Guardian Job", value: (student) => student.guardianJob ?? "" },
+  { header: "Guardian Job Address", value: (student) => student.guardianJobAddress ?? "" },
+  { header: "Emergency Person Name", value: (student) => student.emergencyPersonName ?? "" },
+  { header: "Emergency Person Address", value: (student) => student.emergencyPersonAddress ?? "" },
+  { header: "Emergency Number", value: (student) => student.emergencyNumber ?? "" },
+  { header: "Disabilities", value: (student) => formatYesNo(student.disabilities) },
+  { header: "Disability Reason", value: (student) => student.disabilityReason ?? "" },
+  { header: "Medicated", value: (student) => formatYesNo(student.medicated) },
+  { header: "Medicine", value: (student) => student.medicine ?? "" },
+  { header: "Registration Payment", value: (student) => student.registrationPayment ?? "" },
+  { header: "Registration Date", value: (student) => formatDate(student.registrationDate) },
+  { header: "Index No", value: (student) => student.indexNo ?? "" },
+  { header: "Library No", value: (student) => student.libraryNo ?? "" },
+  { header: "House", value: (student) => student.house ?? "" },
+  { header: "Grade", value: (student) => student.grade ?? "" },
+  { header: "Student Active Monitor", value: (student) => student.studentActiveMonitor ?? "" },
+  { header: "Siblings", value: (student) => formatSiblings(student.siblings) },
+  { header: "Created At", value: (student) => formatDate(student.createdAt) },
+  { header: "Agree To Terms", value: (student) => formatBoolean(student.agreeToTerms) },
+];
+
+function buildStudentExportRows(students: StudentDTO[]) {
+  return students.map((student) => {
+    const row: Record<string, string | number | boolean> = {};
+
+    studentExportColumns.forEach((column) => {
+      const value = column.value(student);
+      row[column.header] = value === null || value === undefined ? "" : value;
+    });
+
+    return row;
+  });
+}
 
 
 export default function StudentsPage() {
@@ -26,6 +135,7 @@ export default function StudentsPage() {
   const [showPromoteConfirm, setShowPromoteConfirm] = useState(false);
   const [isPromoting, setIsPromoting] = useState(false);
   const [promoteStatus, setPromoteStatus] = useState<{ success?: string; error?: string } | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
 
 
   useEffect(() => {
@@ -73,6 +183,27 @@ export default function StudentsPage() {
   const { data, loading, error, refetch } = useStudents(!!isAuthenticated && !!filterGrade, filterGrade, debouncedName);
   const [selectedStudent, setSelectedStudent] = useState<StudentDTO | null>(null);
 
+  const handleExportExcel = async () => {
+    if (!filterGrade || isExporting) return;
+
+    setIsExporting(true);
+    try {
+      const students = await fetchAllStudents(filterGrade);
+      const rows = buildStudentExportRows(students);
+      const worksheet = XLSX.utils.json_to_sheet(rows);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, `Grade ${filterGrade}`);
+
+      const today = new Date().toISOString().slice(0, 10);
+      XLSX.writeFile(workbook, `grade-${filterGrade}-students-${today}.xlsx`);
+    } catch (error) {
+      console.error("Failed to export students to Excel:", error);
+      alert("Failed to export student data. Please try again.");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   if (isAuthenticated === null) return <LoadingPage />;
   if (!isAuthenticated) return null;
 
@@ -87,6 +218,18 @@ export default function StudentsPage() {
                 <p className="text-slate-500 mt-1 font-medium">Manage and view all registered students</p>
             </div>
             <div className="flex items-center gap-3">
+              {filterGrade && (
+                <button
+                  onClick={handleExportExcel}
+                  disabled={isExporting || loading}
+                  className="flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-2xl font-bold hover:bg-emerald-700 transition-all shadow-md hover:shadow-lg active:scale-95 border border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <svg className={`w-5 h-5 ${isExporting ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 3v12m0 0l-4-4m4 4l4-4m-6 8h8"></path>
+                  </svg>
+                  {isExporting ? 'Exporting...' : 'Export Excel'}
+                </button>
+              )}
                 <button
                     onClick={() => setShowPromoteConfirm(true)}
                     className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-2xl font-bold hover:from-red-600 hover:to-orange-600 transition-all shadow-md hover:shadow-lg active:scale-95 border border-transparent"

@@ -8,6 +8,7 @@ import { getUserRole } from "../../../../lib/authUtils";
 import { useStudents } from "../../students/hooks/useStudents";
 import LoadingPage from "../../../components/ui/LoadingPage";
 import StudentMarkCard from "./components/StudentMarkCard";
+import { fetchMarksByStudentAndYear } from "./api/marksApi";
 
 export default function StudentMarksPage() {
   const router = useRouter();
@@ -68,7 +69,43 @@ export default function StudentMarksPage() {
     };
   }, [searchTerm]);
 
-  const { data, loading, error, refetch } = useStudents(!!isAuthenticated && !!filterGrade, filterGrade, debouncedName);
+    const { data, loading, error, refetch } = useStudents(!!isAuthenticated && !!filterGrade, filterGrade, debouncedName);
+    const [anyMarksFound, setAnyMarksFound] = useState<boolean | null>(null);
+
+    // Check whether any marks exist for the returned students in the selected academic year
+    useEffect(() => {
+        let active = true;
+        async function checkAnyMarks() {
+            if (!academicYear || loading) return;
+            if (!data || data.length === 0) {
+                if (active) setAnyMarksFound(null);
+                return;
+            }
+
+            // Reset to null while checking
+            if (active) setAnyMarksFound(null);
+
+            for (const student of data) {
+                try {
+                    if (!student.id) continue;
+
+                    const mark = await fetchMarksByStudentAndYear(student.id, academicYear);
+                    if (!active) return;
+                    if (mark) {
+                        if (active) setAnyMarksFound(true);
+                        return;
+                    }
+                } catch (err) {
+                    console.error(err);
+                }
+            }
+
+            if (active) setAnyMarksFound(false);
+        }
+
+        checkAnyMarks();
+        return () => { active = false; };
+    }, [data, academicYear, loading]);
 
   if (isAuthenticated === null) return <LoadingPage />;
   if (!isAuthenticated) return null;
@@ -246,14 +283,24 @@ export default function StudentMarksPage() {
                             </div>
                         </div>
                     ) : data.length === 0 ? (
-                        <div className="bg-white p-20 rounded-[2rem] border border-slate-200 text-center animate-in zoom-in-95">
-                            <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-300">
+                            <div className="max-w-md mx-auto text-center py-12 space-y-4">
+                                <div className="w-20 h-20 bg-gradient-to-br from-white to-slate-50 rounded-2xl flex items-center justify-center mx-auto text-blue-600 shadow-lg">
+                                    <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                    </svg>
+                                </div>
+                                <h3 className="text-lg font-extrabold text-slate-900 mb-1">No Results Found</h3>
+                                <p className="text-slate-500 text-sm">We couldn&apos;t find any students in Grade {filterGrade} matching &quot;{searchTerm}&quot;.</p>
+                            </div>
+                    ) : anyMarksFound === false ? (
+                        <div className="max-w-md mx-auto text-center py-12 space-y-4">
+                            <div className="w-20 h-20 bg-gradient-to-br from-white to-slate-50 rounded-2xl flex items-center justify-center mx-auto text-blue-600 shadow-lg">
                                 <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                 </svg>
                             </div>
-                            <h3 className="text-xl font-bold text-slate-800 mb-1">No Results Found</h3>
-                            <p className="text-slate-500 font-medium">We couldn&apos;t find any students in Grade {filterGrade} matching &quot;{searchTerm}&quot;.</p>
+                            <h3 className="text-lg font-extrabold text-slate-900 mb-1">No Marks Found</h3>
+                            <p className="text-slate-500 text-sm">No marks have been recorded for students in Grade {filterGrade} for {academicYear}.</p>
                         </div>
                     ) : (
                         <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 transition-all duration-300 ${loading ? 'opacity-50 grayscale' : 'opacity-100'}`}>
