@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import { useRouter } from "next/navigation";
 import { fetchCurrentUser } from "../../features/auth/api/authApi";
 import { fetchContactUsMessagesByUser, submitContactUsMessage } from "../../features/contact/api/contactapi";
 import { fetchMyStudents } from "../../features/students/api/studentsApi";
@@ -221,9 +222,39 @@ function normalizeUserMessages(payload: unknown, userId: string): ChatMessage[] 
 }
 
 function mergeMessages(existing: ChatMessage[], incoming: ChatMessage[]) {
-  return Array.from(
-    [...existing, ...incoming].reduce((map, message) => map.set(message.id, message), new Map<string, ChatMessage>()).values(),
-  ).sort((a, b) => parseDateValue(a.createdAt || a.timestamp) - parseDateValue(b.createdAt || b.timestamp));
+  function baseId(id: string) {
+    if (!id) return id;
+    return id.replace(/(-admin|-user|-reply(-\d+)?)$/i, "");
+  }
+
+  const combined = [...existing, ...incoming];
+  const keyed = new Map<string, ChatMessage>();
+
+  for (const msg of combined) {
+    const key = baseId(msg.id || "");
+
+    if (!keyed.has(key)) {
+      keyed.set(key, msg);
+      continue;
+    }
+
+    const prev = keyed.get(key)!;
+
+    // prefer messages with status 'sent' over 'sending'/'failed'
+    if (prev.status !== "sent" && msg.status === "sent") {
+      keyed.set(key, { ...prev, ...msg, id: prev.id || msg.id });
+      continue;
+    }
+
+    // if timestamps differ, keep the one with later createdAt
+    const prevTime = parseDateValue(prev.createdAt || prev.timestamp);
+    const msgTime = parseDateValue(msg.createdAt || msg.timestamp);
+    if (msgTime > prevTime) {
+      keyed.set(key, { ...prev, ...msg, id: prev.id || msg.id });
+    }
+  }
+
+  return Array.from(keyed.values()).sort((a, b) => parseDateValue(a.createdAt || a.timestamp) - parseDateValue(b.createdAt || b.timestamp));
 }
 
 function readStoredChatState(userId: string): StoredChatState | null {
@@ -265,6 +296,8 @@ function writeStoredChatState(userId: string, state: StoredChatState) {
 
 export default function ContactUsPage() {
   const t = useTranslations();
+  const locale = useLocale();
+  const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [nameInput, setNameInput] = useState("");
   const [chatName, setChatName] = useState("");
@@ -273,23 +306,10 @@ export default function ContactUsPage() {
   const [studentIds, setStudentIds] = useState<string[]>([]);
   const [currentUserId, setCurrentUserId] = useState("");
   const [currentUserName, setCurrentUserName] = useState("");
+  const [isUserContextReady, setIsUserContextReady] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const hasStartedChat = Boolean(chatName.trim());
-  const chatSteps = [
-    {
-      label: t("contact_us_step_1_label"),
-      text: t("contact_us_step_1_text"),
-    },
-    {
-      label: t("contact_us_step_2_label"),
-      text: t("contact_us_step_2_text"),
-    },
-    {
-      label: t("contact_us_step_3_label"),
-      text: t("contact_us_step_3_text"),
-    },
-  ];
 
   useEffect(() => {
     let isActive = true;
@@ -328,6 +348,10 @@ export default function ContactUsPage() {
         setStudentIds([]);
         setCurrentUserId("");
         setCurrentUserName("");
+      } finally {
+        if (isActive) {
+          setIsUserContextReady(true);
+        }
       }
     }
 
@@ -395,6 +419,41 @@ export default function ContactUsPage() {
       isActive = false;
     }
   }, [currentUserId, currentUserName]);
+
+  // Poll for new messages periodically so incoming replies appear instantly
+  useEffect(() => {
+    if (!isUserContextReady) return;
+
+    const storageUserId = currentUserId.trim();
+    if (!storageUserId) return;
+
+    let isActive = true;
+    const intervalMs = 5000;
+
+    const poll = async () => {
+      try {
+        const payload = await fetchContactUsMessagesByUser(storageUserId);
+        if (!isActive) return;
+
+        const remoteMessages = normalizeUserMessages(payload, storageUserId);
+        if ((remoteMessages ?? []).length > 0) {
+          setMessages((currentMessages) => mergeMessages(currentMessages, remoteMessages));
+        }
+      } catch (error) {
+        // don't spam the console, but log once
+        console.error("Failed to poll contact chat history", error);
+      }
+    };
+
+    // run immediately, then on interval
+    poll();
+    const timer = setInterval(poll, intervalMs);
+
+    return () => {
+      isActive = false;
+      clearInterval(timer);
+    };
+  }, [isUserContextReady, currentUserId]);
 
   useEffect(() => {
     writeStoredChatState(currentUserId.trim(), {
@@ -481,6 +540,15 @@ export default function ContactUsPage() {
   };
 
   const handleStartChat = () => {
+    if (!isUserContextReady) {
+      return;
+    }
+
+    if (!currentUserId.trim()) {
+      router.push(`/${locale}/login`);
+      return;
+    }
+
     const trimmedName = nameInput.trim();
     if (!trimmedName) {
       setSubmitError("Please enter your name to start the chat.");
@@ -508,6 +576,19 @@ export default function ContactUsPage() {
     });
   };
 
+  const handleOpenChat = () => {
+    if (!isUserContextReady) {
+      return;
+    }
+
+    if (!currentUserId.trim()) {
+      router.push(`/${locale}/login`);
+      return;
+    }
+
+    setIsModalOpen(true);
+  };
+
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSubmitError(null);
@@ -531,83 +612,65 @@ export default function ContactUsPage() {
               <p className="mt-4 text-base leading-8 text-slate-600 sm:text-lg">
                 {t("contact_us_hero_text")}
               </p>
-              <div className="mt-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
-                {t("contact_us_notice")}
-              </div>
             </div>
           </div>
 
-          <div className="relative grid gap-0 lg:grid-cols-[1.25fr_0.75fr]">
+          <div className="relative grid gap-0 lg:grid-cols-[1.18fr_0.82fr]">
             <div className="px-6 py-8 sm:px-8 lg:px-10 lg:py-10">
-              <div className="grid gap-4 md:grid-cols-3">
-                {chatSteps.map((item) => (
-                  <div key={item.label} className="rounded-[1.5rem] border border-slate-200/80 bg-gradient-to-br from-white to-sky-50/70 p-5 shadow-sm">
-                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-700">{item.label}</p>
-                    <p className="mt-2 text-sm leading-6 text-slate-600">{item.text}</p>
+              <div className="rounded-[1.85rem] border border-slate-200/80 bg-white p-6 shadow-sm sm:p-8">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.32em] text-sky-700">{t("contact_us_quick_links")}</p>
+                    <h2 className="mt-3 text-2xl font-black tracking-tight text-slate-950">{t("contact_us_sidebar_title")}</h2>
                   </div>
-                ))}
-              </div>
+                </div>
 
-              <div className="mt-6 rounded-[1.75rem] border border-slate-200/80 bg-slate-950 p-6 text-white shadow-[0_20px_60px_rgba(15,23,42,0.22)]">
-                <p className="text-xs font-semibold uppercase tracking-[0.35em] text-sky-200">{t("contact_us")}</p>
-                <h2 className="mt-3 text-2xl font-black tracking-tight">{t("contact_us_support_title")}</h2>
-                <p className="mt-3 max-w-xl text-sm leading-7 text-slate-300">{t("contact_us_support_text")}</p>
-                <button
-                  onClick={() => setIsModalOpen(true)}
-                  type="button"
-                  className="mt-5 rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-slate-100"
-                >
-                  {t("contact_us_start_chat")}
-                </button>
-              </div>
-
-              <div className="mt-6 rounded-[1.75rem] border border-slate-200/80 bg-white p-6 shadow-sm">
-                  <h3 className="text-sm font-semibold uppercase tracking-[0.28em] text-slate-500">
-                    {t("contact_us_quick_links")}
-                  </h3>
-                  <p className="mt-3 text-sm leading-6 text-slate-600">{t("contact_us_sidebar_text")}</p>
-
-                  <div className="mt-5 grid gap-3">
-                    <a href="mailto:info@dhammaschool.lk" className="group rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 transition hover:border-sky-200 hover:bg-sky-50">
-                      <div className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">{t("contact_us_email")}</div>
-                      <div className="mt-1 text-sm font-medium text-slate-800">info@dhammaschool.lk</div>
-                    </a>
-                    <a href="tel:+94770000000" className="group rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 transition hover:border-sky-200 hover:bg-sky-50">
-                      <div className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">{t("contact_us_phone")}</div>
-                      <div className="mt-1 text-sm font-medium text-slate-800">+94 77 000 0000</div>
-                    </a>
-                    <a href="https://youtube.com" target="_blank" rel="noreferrer" className="group rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 transition hover:border-sky-200 hover:bg-sky-50">
-                      <div className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">{t("contact_us_youtube")}</div>
-                      <div className="mt-1 text-sm font-medium text-slate-800">YouTube</div>
-                    </a>
-                    <a href="https://facebook.com" target="_blank" rel="noreferrer" className="group rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 transition hover:border-sky-200 hover:bg-sky-50">
-                      <div className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">{t("contact_us_facebook")}</div>
-                      <div className="mt-1 text-sm font-medium text-slate-800">Facebook</div>
-                    </a>
-                  </div>
+                <div className="mt-6 grid gap-3 md:grid-cols-2">
+                  <a href="mailto:info@dhammaschool.lk" className="group rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 transition hover:border-sky-200 hover:bg-sky-50">
+                    <div className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">{t("contact_us_email")}</div>
+                    <div className="mt-1 text-sm font-semibold text-slate-800">info@dhammaschool.lk</div>
+                  </a>
+                  <a href="tel:+94770000000" className="group rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 transition hover:border-sky-200 hover:bg-sky-50">
+                    <div className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">{t("contact_us_phone")}</div>
+                    <div className="mt-1 text-sm font-semibold text-slate-800">+94 77 000 0000</div>
+                  </a>
+                  <a href="https://youtube.com" target="_blank" rel="noreferrer" className="group rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 transition hover:border-sky-200 hover:bg-sky-50">
+                    <div className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">{t("contact_us_youtube")}</div>
+                    <div className="mt-1 text-sm font-semibold text-slate-800">YouTube</div>
+                  </a>
+                  <a href="https://facebook.com" target="_blank" rel="noreferrer" className="group rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 transition hover:border-sky-200 hover:bg-sky-50">
+                    <div className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">{t("contact_us_facebook")}</div>
+                    <div className="mt-1 text-sm font-semibold text-slate-800">Facebook</div>
+                  </a>
+                </div>
               </div>
             </div>
 
             <aside className="border-t border-slate-100/80 bg-gradient-to-b from-slate-50 to-white px-6 py-8 sm:px-8 lg:border-l lg:border-t-0 lg:px-10 lg:py-10">
-              <div className="rounded-[1.75rem] border border-slate-200/80 bg-white p-6 shadow-sm">
-                <p className="text-xs font-semibold uppercase tracking-[0.32em] text-sky-700">{t("contact_us_sidebar_tag")}</p>
-                <h2 className="mt-3 text-2xl font-black tracking-tight text-slate-950">{t("contact_us_sidebar_title")}</h2>
-                <p className="mt-3 text-sm leading-7 text-slate-600">{t("contact_us_sidebar_text")}</p>
-
-                <div className="mt-6 space-y-4">
-                  <div className="rounded-2xl bg-sky-50 px-4 py-4">
-                    <div className="text-xs font-semibold uppercase tracking-[0.22em] text-sky-700">{t("contact_us_sidebar_step_1_label")}</div>
-                    <div className="mt-1 text-sm text-slate-700">{t("contact_us_sidebar_step_1_text")}</div>
-                  </div>
-                  <div className="rounded-2xl bg-emerald-50 px-4 py-4">
-                    <div className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-700">{t("contact_us_sidebar_step_2_label")}</div>
-                    <div className="mt-1 text-sm text-slate-700">{t("contact_us_sidebar_step_2_text")}</div>
-                  </div>
-                  <div className="rounded-2xl bg-amber-50 px-4 py-4">
-                    <div className="text-xs font-semibold uppercase tracking-[0.22em] text-amber-700">{t("contact_us_sidebar_step_3_label")}</div>
-                    <div className="mt-1 text-sm text-slate-700">{t("contact_us_sidebar_step_3_text")}</div>
-                  </div>
+              <div className="rounded-[1.85rem] border border-slate-200/80 bg-slate-950 p-6 text-white shadow-[0_20px_60px_rgba(15,23,42,0.22)] sm:p-8">
+                <div className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.32em] text-sky-200">
+                  {t("contact_us_chatbot_badge")}
                 </div>
+                <h2 className="mt-4 text-2xl font-black tracking-tight">{t("contact_us_support_title")}</h2>
+                <p className="mt-3 text-sm leading-7 text-slate-300">{t("contact_us_support_text")}</p>
+                <div className="mt-5 rounded-2xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
+                  {t("contact_us_notice")}
+                </div>
+
+                <div className="mt-6 grid gap-3 text-sm text-slate-200">
+                  <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">{t("contact_us_chatbot_point_1")}</div>
+                  <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">{t("contact_us_chatbot_point_2")}</div>
+                  <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">{t("contact_us_chatbot_point_3")}</div>
+                </div>
+
+                <button
+                  onClick={handleOpenChat}
+                  type="button"
+                  disabled={!isUserContextReady}
+                  className="mt-6 inline-flex w-full items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:bg-slate-300"
+                >
+                  {t("contact_us_start_chat")}
+                </button>
               </div>
             </aside>
           </div>
@@ -616,8 +679,8 @@ export default function ContactUsPage() {
 
       {/* Chat Bot Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 px-4 py-6">
-          <div className="flex h-[90vh] w-[90vw] max-w-[92vw] flex-col overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-2xl sm:max-w-[78rem]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 px-3 py-3 sm:px-4 sm:py-5 lg:px-6 lg:py-6">
+          <div className="flex h-[94dvh] w-[min(100vw-1.5rem,92rem)] flex-col overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-2xl sm:h-[92dvh] sm:w-[min(100vw-2rem,90rem)] sm:rounded-[1.75rem] lg:h-[90dvh] lg:w-[min(92vw,92rem)] lg:rounded-[2rem]">
             <div className="flex items-center justify-between border-b border-slate-200 bg-gradient-to-r from-slate-950 via-sky-900 to-emerald-800 px-4 py-3 text-white sm:px-6">
               <div>
                 <h2 className="text-base font-bold sm:text-lg">{t("contact_us_modal_title")}</h2>
@@ -627,15 +690,15 @@ export default function ContactUsPage() {
               </div>
               <button
                 onClick={handleCloseModal}
-                className="text-sm font-semibold uppercase tracking-[0.24em] hover:text-sky-100"
+                className="rounded-full border border-white/15 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.24em] transition hover:bg-white/10 hover:text-sky-100 sm:px-4 sm:py-2"
               >
                 {t("contact_us_close")}
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto bg-[#efeae2] px-3 py-4 sm:px-5">
+            <div className="flex-1 overflow-y-auto bg-[#efeae2] px-2 py-3 sm:px-4 sm:py-4">
               {!hasStartedChat ? (
-                <div className="mx-auto mt-10 max-w-md rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-[0_18px_50px_rgba(15,23,42,0.12)]">
+                <div className="mx-auto mt-6 w-full max-w-md rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-[0_18px_50px_rgba(15,23,42,0.12)] sm:mt-10 sm:rounded-[1.75rem] sm:p-6">
                   <label className="block text-sm font-semibold text-slate-700">
                     {t("contact_us_name") || "Your Name"}
                   </label>
@@ -655,13 +718,13 @@ export default function ContactUsPage() {
                   </button>
                 </div>
               ) : (
-                <div className="space-y-3 px-1 pb-2 pt-1">
+                <div className="space-y-3 px-1 pb-2 pt-1 sm:px-2">
                   {messages.map((msg) => {
                     const isUser = msg.sender === "user";
                     return (
                       <div key={msg.id} className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
                         <div
-                          className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm shadow-sm sm:max-w-[72%] ${
+                          className={`max-w-[88%] rounded-2xl px-3 py-2 text-sm shadow-sm sm:max-w-[72%] sm:px-4 sm:py-3 ${
                             isUser ? "rounded-br-md bg-[#d9fdd3] text-slate-800" : "rounded-bl-md bg-white text-slate-800"
                           }`}
                         >
@@ -683,7 +746,7 @@ export default function ContactUsPage() {
               )}
             </div>
 
-            <div className="border-t border-slate-200 bg-[#f0f2f5] px-3 py-3 sm:px-4">
+            <div className="border-t border-slate-200 bg-[#f0f2f5] px-2 py-2.5 sm:px-4 sm:py-3">
               <div className="mb-2 text-[11px] text-slate-600">
                 {studentIds.length > 0
                   ? t("contact_us_linked_students", { count: studentIds.length })
@@ -694,28 +757,25 @@ export default function ContactUsPage() {
                 <p className="mb-2 rounded-xl bg-rose-50 px-3 py-2 text-xs text-rose-700">{submitError}</p>
               )}
 
-              <div className="flex items-center gap-2 rounded-xl bg-white p-2 shadow-sm">
+              <div className="flex items-end gap-2 rounded-2xl bg-white p-2 shadow-sm sm:items-center">
                 <input
                   type="text"
                   value={messageInput}
                   onChange={(e) => setMessageInput(e.target.value)}
                   disabled={!hasStartedChat || isSubmitting}
                   placeholder={hasStartedChat ? t("contact_us_message_placeholder_short") : t("contact_us_message_disabled_placeholder")}
-                  className="h-10 flex-1 rounded-lg border border-transparent bg-transparent px-3 text-sm text-slate-900 outline-none transition focus:border-emerald-300 focus:bg-emerald-50/40"
+                  className="h-11 flex-1 rounded-xl border border-transparent bg-transparent px-3 text-sm text-slate-900 outline-none transition focus:border-emerald-300 focus:bg-emerald-50/40 sm:h-10"
                 />
                 <button
                   onClick={handleSendMessage}
                   disabled={!hasStartedChat || isSubmitting || !messageInput.trim()}
-                  className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-300"
+                  aria-label={isSubmitting ? t("contact_us_sending") : t("contact_us_send")}
+                  className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-600 text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-300 sm:h-10 sm:w-10"
                 >
-                  {isSubmitting ? t("contact_us_sending") : t("contact_us_send")}
-                </button>
-                <button
-                  onClick={handleCloseModal}
-                  type="button"
-                  className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
-                >
-                  {t("contact_us_close")}
+                  <svg aria-hidden="true" viewBox="0 0 24 24" className={`h-5 w-5 transition ${isSubmitting ? "animate-pulse" : ""}`} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M22 2 11 13" />
+                    <path d="M22 2 15 22 11 13 2 9 22 2Z" />
+                  </svg>
                 </button>
               </div>
             </div>
