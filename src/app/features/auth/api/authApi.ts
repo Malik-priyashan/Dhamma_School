@@ -1,5 +1,8 @@
 const AUTH_PROXY_BASE = '/api/proxy/auth';
-const AUTH_COOKIE_NAMES = ['accessToken', 'auth_token', 'userRole'] as const;
+const AUTH_COOKIE_NAMES = ['accessToken', 'auth_token', 'userRole', 'loginAt'] as const;
+const ADMIN_CONTACT_THREAD_READ_STORAGE_KEY_PREFIX = 'dhamma_school_admin_contact_thread_read_v1';
+
+export type AuthPayload = Record<string, unknown>;
 
 function authTarget(path: string) {
   return `${AUTH_PROXY_BASE}/${path}`;
@@ -23,15 +26,24 @@ export function clearClientAuthState() {
   try {
     localStorage.removeItem('userRole');
     localStorage.removeItem('accessToken');
+    localStorage.removeItem('loginAt');
+
+    for (let index = localStorage.length - 1; index >= 0; index -= 1) {
+      const key = localStorage.key(index);
+      if (key && key.startsWith(ADMIN_CONTACT_THREAD_READ_STORAGE_KEY_PREFIX)) {
+        localStorage.removeItem(key);
+      }
+    }
   } catch {}
 
   try {
     sessionStorage.removeItem('userRole');
     sessionStorage.removeItem('accessToken');
+    sessionStorage.removeItem('loginAt');
   } catch {}
 }
 
-export async function registerUser(payload: unknown) {
+export async function registerUser(payload: AuthPayload) {
   const target = authTarget('register');
 
   try {
@@ -65,7 +77,7 @@ export async function registerUser(payload: unknown) {
   }
 }
 
-export async function loginUser(payload: unknown) {
+export async function loginUser(payload: AuthPayload) {
   const target = authTarget('login');
 
   try {

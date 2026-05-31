@@ -53,6 +53,11 @@ export default function LoginPage() {
         document.cookie = `userRole=${res.user.role}; path=/;`;
         localStorage.setItem('userRole', res.user.role);
       }
+
+      const loginAt = new Date().toISOString();
+      localStorage.setItem('loginAt', loginAt);
+      document.cookie = `loginAt=${encodeURIComponent(loginAt)}; path=/;`;
+
       if (token) {
         document.cookie = `accessToken=${token}; path=/;`;
         document.cookie = `auth_token=true; path=/;`; // for other components
@@ -96,8 +101,8 @@ export default function LoginPage() {
           transition={{ type: "spring", stiffness: 90, damping: 18 }}
           className="flex items-center gap-3.5 z-10"
         >
-          <div className="w-24 h-28 rounded-[12px] overflow-hidden bg-white/10 border border-white/30 p-1 flex items-center justify-center shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_10px_30px_rgba(255,255,255,0.08)] backdrop-blur-md">
-            <Image src="/logo/logo.jpeg" alt="Logo" width={96} height={112} className="h-full w-full rounded-[8px] object-contain" />
+          <div className="w-24 h-28 rounded-xl overflow-hidden bg-white/10 border border-white/30 p-1 flex items-center justify-center shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_10px_30px_rgba(255,255,255,0.08)] backdrop-blur-md">
+            <Image src="/logo/logo.jpeg" alt="Logo" width={96} height={112} className="h-full w-full rounded-lg object-contain" />
           </div>
           <span className="max-w-xs text-sm font-semibold tracking-[0.18em] text-neutral-100 uppercase leading-relaxed">
             {t('school_name')}
@@ -211,8 +216,8 @@ export default function LoginPage() {
         >
           {/* Logo visible only on mobile/stacked layouts */}
           <div className="md:hidden flex justify-center mb-6">
-            <div className="w-24 h-28 rounded-[12px] overflow-hidden bg-white/50 border border-white/70 p-1 flex items-center justify-center shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_12px_32px_rgba(15,23,42,0.12)] backdrop-blur-md">
-              <Image src="/logo/logo.jpeg" alt="Logo" width={96} height={112} className="h-full w-full rounded-[8px] object-contain" />
+            <div className="w-24 h-28 rounded-xl overflow-hidden bg-white/50 border border-white/70 p-1 flex items-center justify-center shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_12px_32px_rgba(15,23,42,0.12)] backdrop-blur-md">
+              <Image src="/logo/logo.jpeg" alt="Logo" width={96} height={112} className="h-full w-full rounded-lg object-contain" />
             </div>
           </div>
 
@@ -251,7 +256,7 @@ export default function LoginPage() {
                   </div>
                 ) : (
                   <div className="bg-neutral-50 border border-neutral-200 text-neutral-800 px-4 py-3.5 rounded-xl flex items-center gap-3">
-                    <div className="w-5 h-5 bg-neutral-900 rounded-full flex items-center justify-center flex-shrink-0">
+                    <div className="w-5 h-5 bg-neutral-900 rounded-full flex items-center justify-center shrink-0">
                       <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
                       </svg>

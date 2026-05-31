@@ -26,6 +26,7 @@ type AdminContentItem = {
   description: string;
   descriptionSi: string;
   image: string;
+  images: string[];
   happenedDate: string;
   happenedDateLabel: string;
 };
@@ -38,6 +39,14 @@ type ContentFormValues = {
   happenedDate: string;
   imageFile: File | null;
   existingImage: string;
+  galleryFiles: File[];
+  existingImages: string[];
+};
+
+type GalleryImageSelection = {
+  key: string;
+  previewUrl: string;
+  file?: File;
 };
 
 function toText(value: unknown) {
@@ -55,22 +64,108 @@ function pickText(record: Record<string, unknown>, keys: string[]) {
   return "";
 }
 
-function toDateInputValue(value: unknown) {
-  const text = toText(value);
-  if (!text) return "";
+function parseDateValue(value: unknown) {
+  const text = toText(value).trim();
+  if (!text) return null;
+
+  const dateOnlyMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(text);
+  if (dateOnlyMatch) {
+    const year = Number(dateOnlyMatch[1]);
+    const month = Number(dateOnlyMatch[2]) - 1;
+    const day = Number(dateOnlyMatch[3]);
+    return new Date(year, month, day);
+  }
 
   const parsed = new Date(text);
-  if (Number.isNaN(parsed.getTime())) return "";
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
 
-  return parsed.toISOString().slice(0, 10);
+function toDateInputValue(value: unknown) {
+  const parsed = parseDateValue(value);
+  if (!parsed) return "";
+
+  const year = parsed.getFullYear();
+  const month = String(parsed.getMonth() + 1).padStart(2, "0");
+  const day = String(parsed.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function normalizeImageUrl(value: unknown) {
+  if (typeof value !== "string") return "";
+
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+
+  return trimmed.replace(/\s/g, "%20");
+}
+
+function normalizeImageList(value: unknown): string[] {
+  if (!value) return [];
+
+  if (Array.isArray(value)) {
+    const collected: string[] = [];
+
+    for (const entry of value) {
+      if (typeof entry === "string") {
+        const normalized = normalizeImageUrl(entry);
+        if (normalized) collected.push(normalized);
+        continue;
+      }
+
+      if (entry && typeof entry === "object") {
+        const record = entry as Record<string, unknown>;
+        const normalized = normalizeImageUrl(record.url || record.image || record.imageUrl || record.src);
+        if (normalized) collected.push(normalized);
+      }
+    }
+
+    return Array.from(new Set(collected));
+  }
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return [];
+
+    if (trimmed.startsWith("[")) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed)) {
+          return normalizeImageList(parsed);
+        }
+      } catch {
+        // Fall through and treat the value as a single URL.
+      }
+    }
+
+    const normalized = normalizeImageUrl(trimmed);
+    return normalized ? [normalized] : [];
+  }
+
+  if (typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    return normalizeImageList(record.url || record.image || record.imageUrl || record.src);
+  }
+
+  return [];
+}
+
+function collectImageUrls(record: Record<string, unknown>) {
+  const sourceValues = [
+    record.images,
+    record.galleryImages,
+    record.gallery_images,
+    record.gallery,
+    record.photos,
+    record.eventGallery,
+  ];
+
+  const collected = sourceValues.flatMap((value) => normalizeImageList(value));
+  return Array.from(new Set(collected));
 }
 
 function formatDateLabel(value: unknown, locale: string) {
-  const text = toText(value);
-  if (!text) return "";
-
-  const parsed = new Date(text);
-  if (Number.isNaN(parsed.getTime())) return "";
+  const parsed = parseDateValue(value);
+  if (!parsed) return "";
 
   return parsed.toLocaleDateString(locale === "si" ? "si-LK" : "en-US", {
     month: "short",
@@ -99,7 +194,8 @@ function normalizeContentItems(payload: unknown, locale: string): AdminContentIt
     const topicSi = pickText(item, ["topicSi", "topic_si", "topicSinhala", "topicSI"]);
     const description = pickText(item, ["description", "content", "body", "summary", "descriptionSi", "description_si", "descriptionSinhala", "descriptionSI"]);
     const descriptionSi = pickText(item, ["descriptionSi", "description_si", "descriptionSinhala", "descriptionSI"]);
-    const image = pickText(item, ["image", "imageUrl", "bannerImage", "thumbnail", "photo"]);
+    const images = collectImageUrls(item);
+    const image = pickText(item, ["image", "imageUrl", "bannerImage", "thumbnail", "photo"]) || images[0] || "";
     const happenedDate = pickText(item, ["happenedDate", "date", "createdAt"]);
     const happenedDateLabel = formatDateLabel(happenedDate, locale);
 
@@ -110,6 +206,7 @@ function normalizeContentItems(payload: unknown, locale: string): AdminContentIt
       description,
       descriptionSi,
       image,
+      images,
       happenedDate,
       happenedDateLabel,
     };
@@ -160,6 +257,7 @@ function ContentEditorModal({
   mode,
   title,
   item,
+  endpoint,
   accentClassName,
   onClose,
   onSubmit,
@@ -168,31 +266,53 @@ function ContentEditorModal({
   mode: "create" | "edit";
   title: string;
   item: AdminContentItem | null;
+  endpoint: "/news" | "/events";
   accentClassName: string;
   onClose: () => void;
   onSubmit: (values: ContentFormValues) => Promise<void>;
 }) {
+  const initialMainImage = item?.image || item?.images?.[0] || "";
+  const initialGalleryImages = item?.images ? item.images.filter((image) => image !== initialMainImage) : [];
   const [topic, setTopic] = useState(item?.topic || "");
   const [topicSinhala, setTopicSinhala] = useState(item?.topicSi || "");
   const [description, setDescription] = useState(item?.description || "");
   const [descriptionSinhala, setDescriptionSinhala] = useState(item?.descriptionSi || "");
   const [happenedDate, setHappenedDate] = useState(item?.happenedDate ? toDateInputValue(item.happenedDate) : "");
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState(item?.image || "");
+  const [imagePreview, setImagePreview] = useState(initialMainImage);
+  const [galleryItems, setGalleryItems] = useState<GalleryImageSelection[]>(
+    initialGalleryImages.map((previewUrl, index) => ({
+      key: `existing-${index}-${previewUrl}`,
+      previewUrl,
+    }))
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isOpen) return;
 
-    setTopic(item?.topic || "");
-    setTopicSinhala(item?.topicSi || "");
-    setDescription(item?.description || "");
-    setDescriptionSinhala(item?.descriptionSi || "");
-    setHappenedDate(item?.happenedDate ? toDateInputValue(item.happenedDate) : "");
-    setImageFile(null);
-    setImagePreview(item?.image || "");
-    setError(null);
+    // Defer state updates to avoid synchronous setState calls inside the effect
+    const handle = setTimeout(() => {
+      setTopic(item?.topic || "");
+      setTopicSinhala(item?.topicSi || "");
+      setDescription(item?.description || "");
+      setDescriptionSinhala(item?.descriptionSi || "");
+      setHappenedDate(item?.happenedDate ? toDateInputValue(item.happenedDate) : "");
+      setImageFile(null);
+      setImagePreview(item?.image || item?.images?.[0] || "");
+      setGalleryItems(
+        (item?.images || [])
+          .filter((image) => image !== (item?.image || item?.images?.[0] || ""))
+          .map((previewUrl, index) => ({
+            key: `existing-${index}-${previewUrl}`,
+            previewUrl,
+          }))
+      );
+      setError(null);
+    }, 0);
+
+    return () => clearTimeout(handle);
   }, [isOpen, item]);
 
   if (!isOpen) return null;
@@ -212,6 +332,46 @@ function ContentEditorModal({
     reader.readAsDataURL(nextFile);
   };
 
+  const handleGalleryChange = (nextFiles: FileList | null) => {
+    const incomingFiles = nextFiles ? Array.from(nextFiles) : [];
+
+    if (!incomingFiles.length) {
+      return;
+    }
+
+    const existingKeys = new Set(galleryItems.map((item) => item.key));
+    const fileEntries = incomingFiles.map((file) => ({
+      file,
+      key: `file-${file.name}-${file.size}-${file.lastModified}-${Math.random().toString(36).slice(2)}`,
+    }));
+
+    const previewReaders = fileEntries.map(
+      (entry) =>
+        new Promise<GalleryImageSelection>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            resolve({
+              key: entry.key,
+              file: entry.file,
+              previewUrl: typeof reader.result === "string" ? reader.result : "",
+            });
+          };
+          reader.readAsDataURL(entry.file);
+        })
+    );
+
+    void Promise.all(previewReaders).then((results) => {
+      setGalleryItems((currentItems) => [
+        ...currentItems,
+        ...results.filter((entry) => entry.previewUrl && !existingKeys.has(entry.key)),
+      ]);
+    });
+  };
+
+  const removeGalleryItem = (key: string) => {
+    setGalleryItems((currentItems) => currentItems.filter((item) => item.key !== key));
+  };
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsSubmitting(true);
@@ -226,6 +386,8 @@ function ContentEditorModal({
         happenedDate,
         imageFile,
         existingImage: item?.image || "",
+        galleryFiles: galleryItems.flatMap((item) => (item.file ? [item.file] : [])),
+        existingImages: galleryItems.flatMap((item) => (!item.file ? [item.previewUrl] : [])),
       });
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Failed to save item.");
@@ -301,7 +463,7 @@ function ContentEditorModal({
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="image" className="block text-sm font-semibold text-slate-700">Image</label>
+              <label htmlFor="image" className="block text-sm font-semibold text-slate-700">Main Image</label>
               <input
                 id="image"
                 type="file"
@@ -311,6 +473,21 @@ function ContentEditorModal({
               />
               <p className="text-xs text-slate-400">Optional. Upload a new image to replace the current one.</p>
             </div>
+
+            {endpoint === "/events" && (
+              <div className="space-y-2">
+                <label htmlFor="galleryImages" className="block text-sm font-semibold text-slate-700">More Images</label>
+                <input
+                  id="galleryImages"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={(e) => handleGalleryChange(e.target.files)}
+                  className="block w-full cursor-pointer rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-600 file:mr-4 file:rounded-full file:border-0 file:bg-slate-900 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-slate-800"
+                />
+                <p className="text-xs text-slate-400">Select one or more additional images for the event gallery.</p>
+              </div>
+            )}
           </div>
 
           <div className="grid gap-5 md:grid-cols-2">
@@ -387,6 +564,43 @@ function ContentEditorModal({
                   <div className="text-xs uppercase tracking-[0.22em] text-slate-500">{happenedDate || "No date selected"}</div>
                 </div>
               </div>
+
+              {endpoint === "/events" && (() => {
+                const totalGalleryImages = galleryItems.length;
+
+                if (!totalGalleryImages) return null;
+
+                return (
+                  <div className="space-y-3 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+                    <div>
+                      <div className="text-xs font-bold uppercase tracking-[0.24em] text-slate-500">Gallery Preview</div>
+                      <div className="mt-1 text-sm font-semibold text-slate-900">
+                        {totalGalleryImages} selected image{totalGalleryImages === 1 ? "" : "s"}
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      {galleryItems.slice(0, 4).map((image, index) => (
+                        <div key={image.key} className="group relative overflow-hidden rounded-2xl bg-slate-100">
+                          <img src={image.previewUrl} alt={`${title} gallery preview ${index + 1}`} className="h-28 w-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => removeGalleryItem(image.key)}
+                            className="absolute right-2 top-2 inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-900/80 text-white opacity-100 transition hover:bg-rose-600"
+                            aria-label={`Remove gallery image ${index + 1}`}
+                          >
+                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    {galleryItems.length > 4 && (
+                      <div className="text-xs font-medium text-slate-500">+{galleryItems.length - 4} more image{galleryItems.length - 4 === 1 ? "" : "s"} selected</div>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           </div>
         </form>
@@ -515,19 +729,30 @@ export default function AdminContentManagerPage({
     setStatus(null);
 
     try {
-      const imageUrl = values.imageFile
-        ? await uploadImageToCloudinary(values.imageFile)
-        : values.existingImage;
+      const [imageUrl, galleryUrls] = await Promise.all([
+        values.imageFile ? uploadImageToCloudinary(values.imageFile) : Promise.resolve(values.existingImage),
+        values.galleryFiles.length
+          ? Promise.all(values.galleryFiles.map((file) => uploadImageToCloudinary(file)))
+          : Promise.resolve([] as string[]),
+      ]);
+
+      const imageCandidates = [imageUrl, ...values.existingImages, ...galleryUrls].filter((value): value is string => Boolean(value));
+      const resolvedImage = imageUrl || values.existingImage || imageCandidates[0] || "";
+      const images = Array.from(new Set([resolvedImage, ...imageCandidates].filter(Boolean)));
 
       const formData = new FormData();
       formData.append("topic", values.topic.trim());
       formData.append("topicSi", values.topicSi.trim());
       formData.append("description", values.description.trim());
       formData.append("descriptionSi", values.descriptionSi.trim());
-      formData.append("happenedDate", new Date(`${values.happenedDate}T00:00:00`).toISOString());
+      formData.append("happenedDate", values.happenedDate);
 
-      if (imageUrl) {
-        formData.append("image", imageUrl);
+      if (resolvedImage) {
+        formData.append("image", resolvedImage);
+      }
+
+      if (images.length) {
+        formData.append("images", JSON.stringify(images));
       }
 
       const isEditing = Boolean(editingItem);
@@ -722,6 +947,7 @@ export default function AdminContentManagerPage({
         mode={editingItem ? "edit" : "create"}
         title={title}
         item={editingItem}
+        endpoint={endpoint}
         accentClassName={accentClassName}
         onClose={closeEditor}
         onSubmit={submitContent}

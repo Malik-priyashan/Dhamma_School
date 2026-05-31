@@ -77,6 +77,8 @@ export default function AdminContentCreatePage({
     return secureUrl;
   };
 
+    const normalizeDateForDb = (value: string) => value;
+
   useEffect(() => {
     let isMounted = true;
 
@@ -127,7 +129,7 @@ export default function AdminContentCreatePage({
       formData.append("topicSi", topicSinhala.trim());
       formData.append("description", content.trim());
       formData.append("descriptionSi", contentSinhala.trim());
-      formData.append("happenedDate", new Date(`${happenedDate}T00:00:00`).toISOString());
+      formData.append("happenedDate", normalizeDateForDb(happenedDate));
 
       if (imageUrl) {
         formData.append("image", imageUrl);

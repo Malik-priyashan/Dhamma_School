@@ -433,13 +433,17 @@ export default function StudentMarksPage() {
       <div className="max-w-4xl mx-auto space-y-8 animate-fade-in">
         
         {/* Top Header Card */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-200 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className={`${marks ? 'bg-white rounded-2xl p-6 shadow-sm border border-neutral-200' : 'bg-transparent rounded-2xl p-6'} flex flex-col md:flex-row md:items-center justify-between gap-6`}>
           <div className="space-y-2">
             <div className="flex flex-wrap items-center gap-2.5">
-              <div className="w-2 h-6 bg-black rounded-full" />
-              <h1 className="text-xl font-bold text-neutral-950 tracking-tight">
-                {locale === 'si' ? `${studentName} ගේ ලකුණු` : `${studentName}'s Marks`}
-              </h1>
+              {marks && (
+                <>
+                  <div className="w-2 h-6 bg-black rounded-full" />
+                  <h1 className="text-xl font-bold text-neutral-950 tracking-tight">
+                    {locale === 'si' ? `${studentName} ගේ ලකුණු` : `${studentName}'s Marks`}
+                  </h1>
+                </>
+              )}
               {selectedStudent?.grade && (
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
                   {locale === 'si' ? `වත්මන් ශ්‍රේණිය: ${selectedStudent.grade}` : `Current: ${selectedStudent.grade}`}
@@ -641,18 +645,18 @@ export default function StudentMarksPage() {
           </div>
         ) : (
           /* Clean Empty State */
-          <div className="bg-white rounded-3xl p-12 text-center max-w-md mx-auto shadow-xl shadow-black/5 border border-slate-100 space-y-4">
-            <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto text-slate-400">
-              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+          <div className="max-w-md mx-auto text-center py-12 space-y-4">
+            <div className="w-20 h-20 bg-gradient-to-br from-white to-slate-50 rounded-2xl flex items-center justify-center mx-auto text-blue-600 shadow-lg">
+              <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
             </div>
             <div>
-              <h3 className="text-base font-bold text-slate-800 mb-1">
+              <h3 className="text-lg font-extrabold text-slate-900 mb-1">
                 {locale === 'si' ? 'ලකුණු සොයාගත නොහැක' : 'No Marks Found'}
               </h3>
-              <p className="text-slate-400 text-xs leading-relaxed">
+              <p className="text-slate-500 text-sm leading-relaxed">
                 {locale === 'si' 
                   ? `${year || ''} වසර සඳහා තවමත් කිසිදු ලකුණක් සටහන් කර නොමැත.` 
-                  : `No marks have been recorded for the year ${year || ''} yet.`
+                  : `No marks have been recorded for ${year || ''} yet.`
                 }
               </p>
             </div>

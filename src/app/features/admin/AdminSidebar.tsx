@@ -44,6 +44,7 @@ export default function AdminSidebar({ setIsAuthenticated }: AdminSidebarProps) 
 
   const navLinks = [
     { path: '/admin', label: 'Dashboard' },
+    { path: '/admin/messages', label: 'Messages' },
     { path: '/admin/students', label: 'Students' },
     { path: '/admin/student-requests', label: 'Student Requests' },
     { path: '/admin/teachers', label: 'Teachers' },
