@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { fetchCurrentUser } from "../../features/auth/api/authApi";
@@ -17,6 +17,7 @@ type ChatMessage = {
   timestamp: string;
   createdAt?: string;
   senderName?: string;
+  clientMessageId?: string;
 };
 
 type CurrentUser = {
@@ -87,7 +88,7 @@ function getContactStorageKey(userId: string) {
 function normalizeStoredMessages(messages: unknown): ChatMessage[] {
   if (!Array.isArray(messages)) return [];
 
-  return messages
+  const normalized = messages
     .filter(
       (msg): msg is ChatMessage =>
         Boolean(msg) &&
@@ -101,6 +102,32 @@ function normalizeStoredMessages(messages: unknown): ChatMessage[] {
       ...msg,
       status: msg.status === "sending" ? "failed" : msg.status,
     }));
+
+  const deduped = new Map<string, ChatMessage>();
+
+  for (const msg of normalized) {
+    const key = msg.clientMessageId || `${msg.sender}|${msg.text.trim()}|${msg.createdAt || msg.timestamp}`;
+
+    if (!deduped.has(key)) {
+      deduped.set(key, msg);
+      continue;
+    }
+
+    const prev = deduped.get(key)!;
+    const prevTime = parseDateValue(prev.createdAt || prev.timestamp);
+    const msgTime = parseDateValue(msg.createdAt || msg.timestamp);
+
+    if (msg.status === "sent" && prev.status !== "sent") {
+      deduped.set(key, msg);
+      continue;
+    }
+
+    if (msgTime > prevTime) {
+      deduped.set(key, msg);
+    }
+  }
+
+  return Array.from(deduped.values());
 }
 
 function getRecordUserId(record: Record<string, unknown>): string {
@@ -160,7 +187,8 @@ function normalizeUserMessages(payload: unknown, userId: string): ChatMessage[] 
       return;
     }
 
-    const contactId = toText(record.id || record._id || record.contactId || record.clientMessageId || `contact-${index}`);
+    const clientMessageId = toText(record.clientMessageId || record.clientMessageID || record.clientMsgId || record.clientRequestId);
+    const contactId = toText(record.id || record._id || record.contactId || clientMessageId || `contact-${index}`);
     const createdAt = toText(record.createdAt || record.clientSubmittedAt || record.sentAt || record.date || new Date().toISOString());
     const primaryMessageText = toText(record.messageContent || record.message || record.content || record.text);
     const primarySenderName = toText(record.senderName || record.name || record.sender || record.userName);
@@ -175,6 +203,7 @@ function normalizeUserMessages(payload: unknown, userId: string): ChatMessage[] 
         timestamp: formatMessageTimestamp(createdAt),
         createdAt,
         senderName: primarySenderName || "",
+        clientMessageId: clientMessageId || undefined,
       });
     }
 
@@ -189,6 +218,7 @@ function normalizeUserMessages(payload: unknown, userId: string): ChatMessage[] 
         timestamp: formatMessageTimestamp(replyCreatedAt),
         createdAt: replyCreatedAt,
         senderName: toText(record.adminSenderName || record.repliedByName || "Admin"),
+          clientMessageId: clientMessageId || undefined,
       });
     }
 
@@ -209,6 +239,7 @@ function normalizeUserMessages(payload: unknown, userId: string): ChatMessage[] 
           timestamp: formatMessageTimestamp(replyCreatedAt),
           createdAt: replyCreatedAt,
           senderName: toText(replyRecord.senderName || replyRecord.name) || (isAdmin ? "Admin" : ""),
+          clientMessageId: clientMessageId || undefined,
         });
       });
     }
@@ -222,16 +253,32 @@ function normalizeUserMessages(payload: unknown, userId: string): ChatMessage[] 
 }
 
 function mergeMessages(existing: ChatMessage[], incoming: ChatMessage[]) {
-  function baseId(id: string) {
-    if (!id) return id;
-    return id.replace(/(-admin|-user|-reply(-\d+)?)$/i, "");
+  function fingerprint(message: ChatMessage) {
+    const createdAt = message.createdAt || message.timestamp;
+    return `${message.sender}|${message.text.trim()}|${createdAt}`;
+  }
+
+  function getMessageKey(message: ChatMessage) {
+    if (message.clientMessageId) {
+      return `client:${message.clientMessageId}`;
+    }
+
+    const id = message.id || "";
+    const isUserMessage = message.sender === "user";
+
+    if (isUserMessage) {
+      const createdAt = message.createdAt || message.timestamp;
+      return `user:${message.text.trim()}|${createdAt}`;
+    }
+
+    return `system:${id || fingerprint(message)}`;
   }
 
   const combined = [...existing, ...incoming];
   const keyed = new Map<string, ChatMessage>();
 
   for (const msg of combined) {
-    const key = baseId(msg.id || "");
+    const key = getMessageKey(msg);
 
     if (!keyed.has(key)) {
       keyed.set(key, msg);
@@ -242,7 +289,7 @@ function mergeMessages(existing: ChatMessage[], incoming: ChatMessage[]) {
 
     // prefer messages with status 'sent' over 'sending'/'failed'
     if (prev.status !== "sent" && msg.status === "sent") {
-      keyed.set(key, { ...prev, ...msg, id: prev.id || msg.id });
+      keyed.set(key, { ...prev, ...msg, id: prev.id || msg.id, clientMessageId: prev.clientMessageId || msg.clientMessageId });
       continue;
     }
 
@@ -250,7 +297,7 @@ function mergeMessages(existing: ChatMessage[], incoming: ChatMessage[]) {
     const prevTime = parseDateValue(prev.createdAt || prev.timestamp);
     const msgTime = parseDateValue(msg.createdAt || msg.timestamp);
     if (msgTime > prevTime) {
-      keyed.set(key, { ...prev, ...msg, id: prev.id || msg.id });
+      keyed.set(key, { ...prev, ...msg, id: prev.id || msg.id, clientMessageId: prev.clientMessageId || msg.clientMessageId });
     }
   }
 
@@ -307,60 +354,54 @@ export default function ContactUsPage() {
   const [currentUserId, setCurrentUserId] = useState("");
   const [currentUserName, setCurrentUserName] = useState("");
   const [isUserContextReady, setIsUserContextReady] = useState(false);
+  const [isLoadingUserContext, setIsLoadingUserContext] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const hasStartedChat = Boolean(chatName.trim());
+  const hasLinkedStudentAccount = studentIds.length > 0;
 
-  useEffect(() => {
-    let isActive = true;
-
-    async function loadUserContext() {
-      try {
-        const [studentResult, userResult] = await Promise.allSettled([fetchMyStudents(), fetchCurrentUser()]);
-
-        if (!isActive) return;
-
-        if (studentResult.status === "fulfilled") {
-          const ids = studentResult.value
-            .map((student) => student.id)
-            .filter((studentId): studentId is string => Boolean(studentId));
-
-          setStudentIds(ids);
-        } else {
-          console.error("Failed to load contact user students", studentResult.reason);
-          setStudentIds([]);
-        }
-
-        if (userResult.status === "fulfilled") {
-          const user = userResult.value as CurrentUser;
-          const resolvedUserId = toText(user.id ?? user._id ?? user.userId ?? user.userID);
-          const resolvedUserName = toText(user.fullName || user.name || user.email);
-
-          setCurrentUserId(resolvedUserId);
-          setCurrentUserName(resolvedUserName);
-        } else {
-          setCurrentUserId("");
-          setCurrentUserName("");
-        }
-      } catch (error) {
-        console.error("Failed to load contact user context", error);
-        if (!isActive) return;
-        setStudentIds([]);
-        setCurrentUserId("");
-        setCurrentUserName("");
-      } finally {
-        if (isActive) {
-          setIsUserContextReady(true);
-        }
-      }
+  const loadUserContext = useCallback(async () => {
+    if (isLoadingUserContext) {
+      return { userId: currentUserId.trim(), studentIds };
     }
 
-    loadUserContext();
+    if (isUserContextReady) {
+      return { userId: currentUserId.trim(), studentIds };
+    }
 
-    return () => {
-      isActive = false;
-    };
-  }, []);
+    setIsLoadingUserContext(true);
+
+    try {
+      const user = (await fetchCurrentUser()) as CurrentUser;
+      const resolvedUserId = toText(user.id ?? user._id ?? user.userId ?? user.userID);
+      const resolvedUserName = toText(user.fullName || user.name || user.email);
+
+      setCurrentUserId(resolvedUserId);
+      setCurrentUserName(resolvedUserName);
+
+      const students = await fetchMyStudents().catch((error) => {
+        console.error("Failed to load contact user students", error);
+        return [];
+      });
+      const ids = students
+        .map((student) => student.id)
+        .filter((studentId): studentId is string => Boolean(studentId));
+
+      setStudentIds(ids);
+      setIsUserContextReady(true);
+
+      return { userId: resolvedUserId, studentIds: ids };
+    } catch {
+      setStudentIds([]);
+      setCurrentUserId("");
+      setCurrentUserName("");
+      setIsUserContextReady(true);
+
+      return { userId: "", studentIds: [] };
+    } finally {
+      setIsLoadingUserContext(false);
+    }
+  }, [currentUserId, isLoadingUserContext, isUserContextReady, studentIds]);
 
   useEffect(() => {
     const storageUserId = currentUserId.trim();
@@ -420,41 +461,6 @@ export default function ContactUsPage() {
     }
   }, [currentUserId, currentUserName]);
 
-  // Poll for new messages periodically so incoming replies appear instantly
-  useEffect(() => {
-    if (!isUserContextReady) return;
-
-    const storageUserId = currentUserId.trim();
-    if (!storageUserId) return;
-
-    let isActive = true;
-    const intervalMs = 5000;
-
-    const poll = async () => {
-      try {
-        const payload = await fetchContactUsMessagesByUser(storageUserId);
-        if (!isActive) return;
-
-        const remoteMessages = normalizeUserMessages(payload, storageUserId);
-        if ((remoteMessages ?? []).length > 0) {
-          setMessages((currentMessages) => mergeMessages(currentMessages, remoteMessages));
-        }
-      } catch (error) {
-        // don't spam the console, but log once
-        console.error("Failed to poll contact chat history", error);
-      }
-    };
-
-    // run immediately, then on interval
-    poll();
-    const timer = setInterval(poll, intervalMs);
-
-    return () => {
-      isActive = false;
-      clearInterval(timer);
-    };
-  }, [isUserContextReady, currentUserId]);
-
   useEffect(() => {
     writeStoredChatState(currentUserId.trim(), {
       chatName,
@@ -487,6 +493,7 @@ export default function ContactUsPage() {
         timestamp,
         createdAt,
         senderName: chatName || nameInput || currentUserName || "",
+        clientMessageId: messageId,
       },
     ]);
 
@@ -539,13 +546,16 @@ export default function ContactUsPage() {
     }
   };
 
-  const handleStartChat = () => {
-    if (!isUserContextReady) {
+  const handleStartChat = async () => {
+    const context = await loadUserContext();
+
+    if (!context.userId.trim()) {
+      router.push(`/${locale}/login`);
       return;
     }
 
-    if (!currentUserId.trim()) {
-      router.push(`/${locale}/login`);
+    if (context.studentIds.length === 0) {
+      setSubmitError(t("contact_us_no_linked_students"));
       return;
     }
 
@@ -576,13 +586,20 @@ export default function ContactUsPage() {
     });
   };
 
-  const handleOpenChat = () => {
-    if (!isUserContextReady) {
+  const handleOpenChat = async () => {
+    if (isLoadingUserContext) {
       return;
     }
 
-    if (!currentUserId.trim()) {
+    const context = await loadUserContext();
+
+    if (!context.userId.trim()) {
       router.push(`/${locale}/login`);
+      return;
+    }
+
+    if (context.studentIds.length === 0) {
+      setSubmitError(t("contact_us_no_linked_students"));
       return;
     }
 
@@ -653,8 +670,14 @@ export default function ContactUsPage() {
                 </div>
                 <h2 className="mt-4 text-2xl font-black tracking-tight">{t("contact_us_support_title")}</h2>
                 <p className="mt-3 text-sm leading-7 text-slate-300">{t("contact_us_support_text")}</p>
-                <div className="mt-5 rounded-2xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
-                  {t("contact_us_notice")}
+                <div
+                  className={`mt-5 rounded-2xl border px-4 py-3 text-sm font-medium ${
+                    !isUserContextReady || hasLinkedStudentAccount
+                      ? "border-sky-200 bg-sky-50 text-slate-700"
+                      : "border-rose-300 bg-rose-50 text-rose-700"
+                  }`}
+                >
+                  {!isUserContextReady || hasLinkedStudentAccount ? t("contact_us_notice") : t("contact_us_no_linked_students")}
                 </div>
 
                 <div className="mt-6 grid gap-3 text-sm text-slate-200">
@@ -666,10 +689,10 @@ export default function ContactUsPage() {
                 <button
                   onClick={handleOpenChat}
                   type="button"
-                  disabled={!isUserContextReady}
+                  disabled={isLoadingUserContext}
                   className="mt-6 inline-flex w-full items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:bg-slate-300"
                 >
-                  {t("contact_us_start_chat")}
+                  {isLoadingUserContext ? "Loading..." : t("contact_us_start_chat")}
                 </button>
               </div>
             </aside>

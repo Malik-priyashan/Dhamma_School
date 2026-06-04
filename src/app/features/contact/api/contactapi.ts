@@ -107,42 +107,23 @@ export async function submitContactUsMessage(payload: ContactUsPayload) {
 
 export async function fetchContactUsMessagesByUser(userId: string) {
   const cleanedUserId = userId.trim();
-  const candidates = [
-    '/my-messages',
-    `?userId=${encodeURIComponent(cleanedUserId)}`,
-    `?userID=${encodeURIComponent(cleanedUserId)}`,
-    `?customerUserId=${encodeURIComponent(cleanedUserId)}`,
-    `?replyToUserId=${encodeURIComponent(cleanedUserId)}`,
-    `?recipientUserId=${encodeURIComponent(cleanedUserId)}`,
-    `?targetUserId=${encodeURIComponent(cleanedUserId)}`,
-    `/user/${encodeURIComponent(cleanedUserId)}`,
-    `/users/${encodeURIComponent(cleanedUserId)}`,
-    '',
-  ];
-
-  let lastError = 'Failed to fetch contact messages.';
-
-  for (const candidatePath of candidates) {
-    const res = await fetch(contactTarget(candidatePath), {
-      method: 'GET',
-      credentials: 'include',
-      cache: 'no-store',
-      headers: { 'Content-Type': 'application/json' },
-    });
-
-    if (res.ok) {
-      return readResponsePayload(res);
-    }
-
-    const text = await res.text().catch(() => '');
-    lastError = text || `Failed to fetch contact messages with status ${res.status}`;
-
-    if (res.status !== 404) {
-      throw new Error(lastError);
-    }
+  if (!cleanedUserId) {
+    return [];
   }
 
-  throw new Error(lastError);
+  const res = await fetch(contactTarget('/my-messages'), {
+    method: 'GET',
+    credentials: 'include',
+    cache: 'no-store',
+    headers: { 'Content-Type': 'application/json' },
+  });
+
+  if (res.ok) {
+    return readResponsePayload(res);
+  }
+
+  const text = await res.text().catch(() => '');
+  throw new Error(text || `Failed to fetch contact messages with status ${res.status}`);
 }
 
 export async function fetchAdminContactMessages() {
@@ -180,6 +161,7 @@ export async function sendAdminContactReply(payload: AdminReplyPayload) {
   const cleanedAdminUserId = payload.adminUserId?.trim() || cleanedUserId;
   const cleanedReplyToUserId = payload.replyToUserId?.trim() || '';
   const cleanedStudentIds = Array.isArray(payload.studentIds) ? payload.studentIds.filter(Boolean) : [];
+  const cleanedThreadTargetUserId = cleanedReplyToUserId || cleanedStudentIds[0] || '';
 
   const body = {
     contactId: payload.contactId,
@@ -189,13 +171,14 @@ export async function sendAdminContactReply(payload: AdminReplyPayload) {
     userID: cleanedAdminUserId || undefined,
     adminUserId: cleanedAdminUserId || undefined,
     adminUserID: cleanedAdminUserId || undefined,
-    customerUserId: cleanedAdminUserId || undefined,
+    customerUserId: cleanedThreadTargetUserId || undefined,
     submittedByUserId: cleanedAdminUserId || undefined,
     createdByUserId: cleanedAdminUserId || undefined,
-    replyToUserId: cleanedReplyToUserId || undefined,
-    recipientUserId: cleanedReplyToUserId || undefined,
-    targetUserId: cleanedReplyToUserId || undefined,
-    parentUserId: cleanedReplyToUserId || undefined,
+    authorUserId: cleanedAdminUserId || undefined,
+    replyToUserId: cleanedThreadTargetUserId || undefined,
+    recipientUserId: cleanedThreadTargetUserId || undefined,
+    targetUserId: cleanedThreadTargetUserId || undefined,
+    parentUserId: cleanedThreadTargetUserId || undefined,
     studentIds: cleanedStudentIds,
     studentId: cleanedStudentIds[0] ?? null,
     senderName: trimmedSenderName,
@@ -212,10 +195,10 @@ export async function sendAdminContactReply(payload: AdminReplyPayload) {
   };
 
   const candidates: Array<{ path: string; method: 'POST' | 'PATCH' }> = [
-    { path: '', method: 'POST' },
     { path: '/reply', method: 'POST' },
     { path: `/${payload.contactId}/reply`, method: 'POST' },
     { path: `/${payload.contactId}`, method: 'PATCH' },
+    { path: '', method: 'POST' },
   ];
 
   let lastError = 'Failed to send admin reply.';
@@ -235,11 +218,6 @@ export async function sendAdminContactReply(payload: AdminReplyPayload) {
 
     const text = await res.text().catch(() => '');
     lastError = text || `Failed to send admin reply with status ${res.status}`;
-
-    // Continue trying only when endpoint is missing.
-    if (res.status !== 404) {
-      throw new Error(lastError);
-    }
   }
 
   throw new Error(lastError);

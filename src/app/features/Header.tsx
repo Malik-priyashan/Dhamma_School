@@ -255,7 +255,6 @@ export default function Header() {
                 ] },
                 { path: '/student/prefect-board', label: t('prefect_board') || 'Prefect Board', studentOnly: true },
                 { path: '/student/announcing', label: t('announcing') || 'Announcing', studentOnly: true },
-                { path: '/student/gallery', label: t('gallery'), studentOnly: true },
                 { path: '/student/marks', label: t('marks') || 'Marks', studentOnly: true },
               ]
               .filter(link => !link.studentOnly || userRole === 'STUDENT')
@@ -420,7 +419,6 @@ export default function Header() {
               ] },
               { path: '/student/prefect-board', label: t('prefect_board') || 'Prefect Board', studentOnly: true },
               { path: '/student/announcing', label: t('announcing') || 'Announcing', studentOnly: true },
-              { path: '/student/gallery', label: t('gallery'), studentOnly: true },
               { path: '/student/marks', label: t('marks') || 'Marks', studentOnly: true },
             ]
             .filter(link => {
