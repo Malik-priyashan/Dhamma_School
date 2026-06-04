@@ -8,6 +8,35 @@ function authTarget(path: string) {
   return `${AUTH_PROXY_BASE}/${path}`;
 }
 
+function authFallbackTarget(path: string) {
+  const backendBase = process.env.NEXT_PUBLIC_BACKEND_URL || (typeof window !== 'undefined' ? window.location.origin : '');
+  const normalizedBase = backendBase.replace(/\/$/, '');
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+
+  return `${normalizedBase}${normalizedPath}`;
+}
+
+async function fetchAuthResponse(path: string, init: RequestInit) {
+  const targets = [authTarget(path), authFallbackTarget(path)];
+  let lastError: unknown = null;
+
+  for (const target of targets) {
+    try {
+      const res = await fetch(target, init);
+      if (res.ok || target === targets[targets.length - 1]) {
+        return res;
+      }
+
+      const responseText = await res.text();
+      lastError = new Error(responseText || `Request failed ${res.status}`);
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error('Auth request failed');
+}
+
 export function clearClientAuthState() {
   if (typeof window === 'undefined') return;
 
@@ -44,10 +73,8 @@ export function clearClientAuthState() {
 }
 
 export async function registerUser(payload: AuthPayload) {
-  const target = authTarget('register');
-
   try {
-    const res = await fetch(target, {
+    const res = await fetchAuthResponse('register', {
       method: 'POST',
       credentials: 'include',
       cache: 'no-store',
@@ -78,10 +105,8 @@ export async function registerUser(payload: AuthPayload) {
 }
 
 export async function loginUser(payload: AuthPayload) {
-  const target = authTarget('login');
-
   try {
-    const res = await fetch(target, {
+    const res = await fetchAuthResponse('login', {
       method: 'POST',
       credentials: 'include',
       cache: 'no-store',
@@ -124,10 +149,8 @@ export async function loginUser(payload: AuthPayload) {
 }
 
 export async function fetchCurrentUser() {
-  const target = authTarget('me');
-
   try {
-    const res = await fetch(target, {
+    const res = await fetchAuthResponse('me', {
       method: 'GET',
       credentials: 'include',
       cache: 'no-store',
@@ -144,10 +167,8 @@ export async function fetchCurrentUser() {
 }
 
 export async function logoutUser() {
-  const target = authTarget('logout');
-
   try {
-    const res = await fetch(target, {
+    const res = await fetchAuthResponse('logout', {
       method: 'POST',
       credentials: 'include',
       cache: 'no-store',

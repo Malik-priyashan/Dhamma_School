@@ -338,7 +338,7 @@ export default function NewsSection({ mode = "preview" }: NewsSectionProps) {
                 {Array.from({ length: 3 }).map((_, index) => (
                   <div
                     key={`news-preview-loading-${index}`}
-                    className="snap-start flex w-[calc((100%-1.5rem)/3)] min-w-[calc((100%-1.5rem)/3)] max-w-[calc((100%-1.5rem)/3)] shrink-0"
+                    className="snap-start flex w-full min-w-full max-w-full shrink-0 sm:w-[calc((100%-1.5rem)/2)] sm:min-w-[calc((100%-1.5rem)/2)] sm:max-w-[calc((100%-1.5rem)/2)] lg:w-[calc((100%-1.5rem)/3)] lg:min-w-[calc((100%-1.5rem)/3)] lg:max-w-[calc((100%-1.5rem)/3)]"
                   >
                     <LoadingCard mode="preview" />
                   </div>
@@ -388,7 +388,7 @@ export default function NewsSection({ mode = "preview" }: NewsSectionProps) {
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") setSelectedItem(item);
                   }}
-                  className="relative cursor-pointer snap-start flex w-[calc((100%-1.5rem)/3)] min-w-[calc((100%-1.5rem)/3)] max-w-[calc((100%-1.5rem)/3)] shrink-0 flex-col overflow-hidden rounded-[1.55rem] bg-white shadow-[0_14px_28px_rgba(37,99,235,0.10)] ring-1 ring-black/5"
+                  className="relative cursor-pointer snap-start flex w-full min-w-full max-w-full shrink-0 flex-col overflow-hidden rounded-[1.55rem] bg-white shadow-[0_14px_28px_rgba(37,99,235,0.10)] ring-1 ring-black/5 sm:w-[calc((100%-1.5rem)/2)] sm:min-w-[calc((100%-1.5rem)/2)] sm:max-w-[calc((100%-1.5rem)/2)] lg:w-[calc((100%-1.5rem)/3)] lg:min-w-[calc((100%-1.5rem)/3)] lg:max-w-[calc((100%-1.5rem)/3)]"
                 >
                   <div className="flex items-start gap-2 px-4 pt-3.5">
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-900 text-xs font-semibold text-white shadow-sm">

@@ -75,3 +75,14 @@ body {
     width: 100%;
   }
 }
+
+/* Hide website navigation header when video lightbox is playing */
+header {
+  transition: opacity 300ms ease, visibility 300ms ease;
+}
+
+body.video-playing header {
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+}

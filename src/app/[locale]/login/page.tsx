@@ -37,6 +37,15 @@ export default function LoginPage() {
     }
   }
 
+  function getPostLoginPath(role: unknown) {
+    const normalizedRole = typeof role === 'string' ? role.toUpperCase() : '';
+
+    if (normalizedRole === 'ADMIN') return `/${locale}/admin`;
+    if (normalizedRole === 'TEACHER') return `/${locale}/dashboard`;
+
+    return `/${locale}`;
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -47,28 +56,17 @@ export default function LoginPage() {
       const res = await loginUser({ email, password }) as any;
       console.log("Login response:", res);
 
-      // Attempt to save token to cookies if backend sends it in JSON
-      const token = res?.accessToken || res?.access_token || res?.token || res?.tokens?.access?.token;
       if (res?.user?.role) {
-        document.cookie = `userRole=${res.user.role}; path=/;`;
         localStorage.setItem('userRole', res.user.role);
       }
 
       const loginAt = new Date().toISOString();
       localStorage.setItem('loginAt', loginAt);
-      document.cookie = `loginAt=${encodeURIComponent(loginAt)}; path=/;`;
-
-      if (token) {
-        document.cookie = `accessToken=${token}; path=/;`;
-        document.cookie = `auth_token=true; path=/;`; // for other components
-      } else {
-        // Fallback marker for frontend if HttpOnly is used
-        document.cookie = `auth_token=true; path=/;`;
-      }
+      const redirectPath = getPostLoginPath(res?.user?.role || res?.user?.Role || res?.role || res?.Role);
       
       setSuccess(true);
       setTimeout(() => {
-        router.push(`/${locale}`);
+        router.replace(redirectPath);
       }, 1000);
     } catch (err: any) {
       setError(err.message || "Login failed. Please check your credentials.");

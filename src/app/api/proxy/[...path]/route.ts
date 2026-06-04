@@ -35,7 +35,9 @@ export async function OPTIONS(req: NextRequest, _args: { params: Promise<{ path:
 async function proxyRequest(req: NextRequest, _params: { path: string[] }) {
   // Keep backend base path (for example "/api") and retry common hosted variants.
   const targetHost = resolveBackendBaseUrl();
-  const forwardPath = (_params.path || []).join('/');
+  const pathSegments = (_params.path || []).filter(Boolean);
+  const isContactReplyPath = pathSegments[0] === 'contact-us' && pathSegments[pathSegments.length - 1] === 'reply';
+  const forwardPath = isContactReplyPath ? 'contact-us' : pathSegments.join('/');
 
   const configured = new URL(targetHost);
   const configuredBasePath = configured.pathname.replace(/\/$/, '');

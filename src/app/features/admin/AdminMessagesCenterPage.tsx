@@ -258,7 +258,7 @@ function normalizeThreads(payload: unknown): ContactThread[] {
       {
         threadId: threadKey,
         primaryContactId: contactId,
-        primaryUserId: recordIsAdmin ? threadUserId || contactId : userId || threadUserId || contactId,
+        primaryUserId: recordIsAdmin ? threadUserId : userId || threadUserId,
         senderName,
         studentNames,
         studentIds,
