@@ -64,7 +64,7 @@ export default function Step3({ data, onChange }: StepProps) {
       )}
 
       <div>
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
           <h3 className="text-lg font-medium text-black">{t('form.siblings')}</h3>
           <button type="button" onClick={addSibling} className="px-3 py-1 bg-sky-400 hover:bg-sky-500 text-white rounded-full shadow">{t('form.addSibling')}</button>
         </div>

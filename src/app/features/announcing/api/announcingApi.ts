@@ -1,13 +1,10 @@
-export async function createAnnouncing(payload: unknown) {
-  // Allow overriding backend base URL via NEXT_PUBLIC_ANNOUNCING_API_BASE
-  const base = (typeof process !== 'undefined' && process.env && process.env.NEXT_PUBLIC_ANNOUNCING_API_BASE)
-    ? process.env.NEXT_PUBLIC_ANNOUNCING_API_BASE
-    : 'http://localhost:3000';
+import { fetchWithAuth } from '../../auth/api/authApi';
 
-  const url = `${base.replace(/\/$/, '')}/announcing`;
+export async function createAnnouncing(payload: unknown) {
+  const url = '/api/proxy/announcing';
 
   try {
-    const res = await fetch(url, {
+    const res = await fetchWithAuth(url, {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -34,7 +31,6 @@ export async function createAnnouncing(payload: unknown) {
 }
 
 export async function fetchAllAnnouncing(filters?: { name?: string; status?: string; page?: number; limit?: number }): Promise<any> {
-  const base = ((process.env.NEXT_PUBLIC_BACKEND_URL) || (typeof window !== 'undefined' ? window.location.origin : '')).replace(/\/$/, '');
   
   const params = new URLSearchParams();
   if (filters) {
@@ -45,9 +41,9 @@ export async function fetchAllAnnouncing(filters?: { name?: string; status?: str
   }
   
   const queryStr = params.toString();
-  const url = `${base}/announcing${queryStr ? `?${queryStr}` : ''}`;
+  const url = `/api/proxy/announcing${queryStr ? `?${queryStr}` : ''}`;
 
-  const res = await fetch(url, {
+  const res = await fetchWithAuth(url, {
     method: 'GET',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
@@ -62,10 +58,9 @@ export async function fetchAllAnnouncing(filters?: { name?: string; status?: str
 }
 
 export async function updateAnnouncing(id: string, data: any): Promise<any> {
-  const base = ((process.env.NEXT_PUBLIC_BACKEND_URL) || (typeof window !== 'undefined' ? window.location.origin : '')).replace(/\/$/, '');
-  const url = `${base}/announcing/${id}`;
+  const url = `/api/proxy/announcing/${id}`;
 
-  const res = await fetch(url, {
+  const res = await fetchWithAuth(url, {
     method: 'PATCH',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },

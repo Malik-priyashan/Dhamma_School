@@ -1,13 +1,13 @@
 import { StudentDTO } from "../types/types";
 import { normalizeDto } from "../dto/dto";
+import { fetchWithAuth } from "../../auth/api/authApi";
 
 export async function submitStudentRequest(dto: StudentDTO) {
-  const base = ((process.env.NEXT_PUBLIC_BACKEND_URL) || (typeof window !== 'undefined' ? window.location.origin : '')).replace(/\/$/, '');
-  const url = `${base}/student-request/submit`;
+  const url = '/api/proxy/student-request/submit';
 
   const payload = normalizeDto(dto as unknown as Record<string, unknown>);
 
-  const res = await fetch(url, {
+  const res = await fetchWithAuth(url, {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
@@ -23,10 +23,9 @@ export async function submitStudentRequest(dto: StudentDTO) {
 }
 
 export async function getLatestRegistrationPaymentAmount() {
-  const base = ((process.env.NEXT_PUBLIC_BACKEND_URL) || (typeof window !== 'undefined' ? window.location.origin : '')).replace(/\/$/, '');
-  const url = `${base}/registration-payment`;
+  const url = '/api/proxy/registration-payment';
 
-  const res = await fetch(url, {
+  const res = await fetchWithAuth(url, {
     method: 'GET',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },

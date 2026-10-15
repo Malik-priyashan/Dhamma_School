@@ -105,19 +105,19 @@ export default function PrefectBoardForm() {
     <>
       <div className="h-20 sm:h-24" />
 
-      <div className="student-registration-form max-w-5xl mx-auto overflow-hidden rounded-[2rem] border border-white/80 bg-white/95 shadow-2xl shadow-slate-900/10 ring-1 ring-slate-900/5 backdrop-blur">
-        <div className="relative border-b border-slate-100 bg-gradient-to-br from-sky-50 via-white to-amber-50 p-6 sm:p-8">
+      <div className="student-registration-form w-full max-w-5xl mx-auto overflow-hidden rounded-2xl sm:rounded-[2rem] border border-white/80 bg-white/95 shadow-2xl shadow-slate-900/10 ring-1 ring-slate-900/5">
+        <div className="relative border-b border-slate-100 bg-gradient-to-br from-sky-50 via-white to-amber-50 p-4 sm:p-8">
           <div className="relative">
             <div className="mb-3 inline-flex rounded-full bg-sky-100 px-3 py-1 text-xs font-bold uppercase tracking-wider text-sky-800">
               {t('form.step')} {step} / 4
             </div>
-            <h2 className="text-3xl font-black tracking-tight text-slate-950 md:text-4xl">{t('prefect_board_title') || 'Prefect Board Application'}</h2>
+            <h2 className="text-2xl font-black tracking-tight text-slate-950 break-words sm:text-3xl md:text-4xl">{t('prefect_board_title') || 'Prefect Board Application'}</h2>
           </div>
 
           <div className="relative mt-6">
-            <div className="mb-3 flex items-center justify-between text-sm">
-              <span className="font-semibold text-slate-700">{steps[step - 1]}</span>
-              <span className="rounded-full bg-white px-3 py-1 font-bold text-sky-700 shadow-sm">{ui.percent}%</span>
+            <div className="mb-3 flex items-center justify-between gap-2 text-sm">
+              <span className="min-w-0 font-semibold text-slate-700 break-words">{steps[step - 1]}</span>
+              <span className="shrink-0 rounded-full bg-white px-3 py-1 font-bold text-sky-700 shadow-sm">{ui.percent}%</span>
             </div>
             <div className="h-3 w-full overflow-hidden rounded-full bg-slate-200">
               <div className="h-full rounded-full bg-gradient-to-r from-sky-500 to-emerald-500 transition-all duration-500" style={{ width: `${ui.percent}%` }} />
@@ -128,7 +128,7 @@ export default function PrefectBoardForm() {
                 const isActive = current === step;
                 const isDone = current < step;
                 return (
-                  <div key={label} className={`rounded-2xl border px-3 py-3 text-center transition ${isActive ? 'border-sky-200 bg-white shadow-sm' : isDone ? 'border-emerald-100 bg-emerald-50/80' : 'border-slate-100 bg-white/60'}`}>
+                  <div key={label} className={`min-w-0 rounded-xl sm:rounded-2xl border px-1.5 py-2 sm:px-3 sm:py-3 text-center transition ${isActive ? 'border-sky-200 bg-white shadow-sm' : isDone ? 'border-emerald-100 bg-emerald-50/80' : 'border-slate-100 bg-white/60'}`}>
                     <div className={`mx-auto mb-1 flex h-7 w-7 items-center justify-center rounded-full text-xs font-black ${isActive ? 'bg-sky-600 text-white' : isDone ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-500'}`}>
                       {isDone ? <span aria-hidden="true">&#10003;</span> : current}
                     </div>
@@ -140,7 +140,7 @@ export default function PrefectBoardForm() {
           </div>
         </div>
 
-        <div className="bg-white p-5 sm:p-8">
+        <div className="bg-white p-4 sm:p-8">
           <form onSubmit={onSubmit}>
             <div className="mb-8">
               {step === 1 && <Step1 data={data} onChange={setField} />}
@@ -149,7 +149,7 @@ export default function PrefectBoardForm() {
               {step === 4 && <Step4 data={data} onChange={setField} />}
             </div>
 
-            <div className="flex items-center justify-between border-t border-slate-100 pt-6">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-6">
               <div>
                 {step > 1 && (
                   <button type="button" onClick={prev} className="rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-bold text-slate-700 shadow-sm transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-800">{t('form.back')}</button>
@@ -179,11 +179,11 @@ export default function PrefectBoardForm() {
         {/* Confirm modal */}
         {ui.showConfirm && (
           <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">
-            <div className="w-11/12 max-w-md rounded-3xl bg-white p-6 shadow-2xl">
+            <div className="max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-3xl bg-white p-4 sm:p-6 shadow-2xl">
               <h3 className="mb-2 text-lg font-bold text-slate-900">{t('form.confirmTitle')}</h3>
               <p className="mb-5 text-sm leading-6 text-slate-600">{t('form.confirmMessage')}</p>
-              <div className="flex justify-end">
-                <button onClick={() => ui.setShowConfirm(false)} className="mr-2 rounded-full border border-slate-200 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">{t('form.confirmNo')}</button>
+              <div className="flex flex-wrap justify-end gap-2">
+                <button onClick={() => ui.setShowConfirm(false)} className="rounded-full border border-slate-200 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">{t('form.confirmNo')}</button>
                 <button
                     onClick={async () => {
                     try {

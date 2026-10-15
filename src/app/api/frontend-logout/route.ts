@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const AUTH_COOKIE_NAMES = ['accessToken', 'auth_token', 'userRole'];
+const AUTH_COOKIE_NAMES = ['accessToken', 'auth_token', 'refreshToken', 'userRole'];
 
 export async function POST(req: NextRequest) {
   try {

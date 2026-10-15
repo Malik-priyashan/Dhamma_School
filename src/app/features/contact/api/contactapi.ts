@@ -1,3 +1,5 @@
+import { fetchWithAuth } from '../../auth/api/authApi';
+
 const CONTACT_PROXY_BASE = '/api/proxy/contact-us';
 
 export type ContactUsPayload = {
@@ -89,7 +91,7 @@ export async function submitContactUsMessage(payload: ContactUsPayload) {
     metadata: payload.metadata ?? {},
   };
 
-  const res = await fetch(contactTarget(), {
+  const res = await fetchWithAuth(contactTarget(), {
     method: 'POST',
     credentials: 'include',
     cache: 'no-store',
@@ -111,7 +113,7 @@ export async function fetchContactUsMessagesByUser(userId: string) {
     return [];
   }
 
-  const res = await fetch(contactTarget('/my-messages'), {
+  const res = await fetchWithAuth(contactTarget('/my-messages'), {
     method: 'GET',
     credentials: 'include',
     cache: 'no-store',
@@ -131,7 +133,7 @@ export async function fetchAdminContactMessages() {
   let lastError = 'Failed to fetch contact messages.';
 
   for (const candidatePath of candidates) {
-    const res = await fetch(contactTarget(candidatePath), {
+    const res = await fetchWithAuth(contactTarget(candidatePath), {
       method: 'GET',
       credentials: 'include',
       cache: 'no-store',
@@ -204,7 +206,7 @@ export async function sendAdminContactReply(payload: AdminReplyPayload) {
   let lastError = 'Failed to send admin reply.';
 
   for (const candidate of candidates) {
-    const res = await fetch(contactTarget(candidate.path), {
+    const res = await fetchWithAuth(contactTarget(candidate.path), {
       method: candidate.method,
       credentials: 'include',
       cache: 'no-store',
@@ -282,7 +284,7 @@ export async function deleteAdminContactThread(payload: DeleteAdminContactThread
   // (e.g. "uuid is expected") — don't stop on client errors so we can
   // attempt alternative endpoint shapes that might accept the id.
   for (const candidate of candidates) {
-    const res = await fetch(contactTarget(candidate.path), {
+    const res = await fetchWithAuth(contactTarget(candidate.path), {
       method: candidate.method,
       credentials: 'include',
       cache: 'no-store',
@@ -360,7 +362,7 @@ export async function markAdminContactThreadRead(payload: MarkAdminContactThread
   let lastError = 'Failed to mark admin chat as read.';
 
   for (const candidate of candidates) {
-    const res = await fetch(contactTarget(candidate.path), {
+    const res = await fetchWithAuth(contactTarget(candidate.path), {
       method: candidate.method,
       credentials: 'include',
       cache: 'no-store',

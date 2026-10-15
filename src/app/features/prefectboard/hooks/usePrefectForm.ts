@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useLocale } from "next-intl";
 import { PrefectFormData, UsePrefectFormInitial } from "../types";
 import { CLOUDINARY_CLOUD_NAME, CLOUDINARY_UPLOAD_PRESET } from "../../../../config";
+import { fetchWithAuth } from "../../auth/api/authApi";
 
 async function parseResponseText(res: Response) {
   const raw = await res.text().catch(() => null);
@@ -28,7 +29,7 @@ export function buildPrefectFormData(dto: Record<string, unknown>, teacherFile?:
 }
 
 export async function postForm(url: string, form: FormData) {
-  const res = await fetch(url, { method: 'POST', credentials: 'include', body: form });
+  const res = await fetchWithAuth(url, { method: 'POST', body: form });
   const { res: response, raw, parsed } = await parseResponseText(res);
   if (!response.ok) {
     let msg = `Request failed with status ${response.status}`;
@@ -44,7 +45,7 @@ export async function postForm(url: string, form: FormData) {
 export async function postJson(url: string, dto: Record<string, unknown>) {
   const sanitized: Record<string, unknown> = {};
   Object.entries(dto || {}).forEach(([k, v]) => { if (v === undefined || v === null) return; sanitized[k] = v; });
-  const res = await fetch(url, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }, body: JSON.stringify(sanitized) });
+  const res = await fetchWithAuth(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }, body: JSON.stringify(sanitized) });
   const { res: response, raw, parsed } = await parseResponseText(res);
   if (!response.ok) {
     try { console.error('Prefect register error response:', { status: response.status, body: parsed ?? raw }); } catch {}

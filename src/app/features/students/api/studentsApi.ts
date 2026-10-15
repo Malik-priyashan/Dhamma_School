@@ -1,4 +1,5 @@
 import { StudentDTO } from "../../studentform/types/types";
+import { fetchWithAuth } from "../../auth/api/authApi";
 
 const STUDENT_PROXY_BASE = '/api/proxy/student';
 
@@ -13,7 +14,7 @@ export async function fetchAllStudents(grade?: string, name?: string): Promise<S
 
   const url = `${studentApi()}${queryString ? `?${queryString.slice(0, -1)}` : ''}`;
 
-  const res = await fetch(url, {
+  const res = await fetchWithAuth(url, {
     method: 'GET',
     credentials: 'include',
     cache: 'no-store',
@@ -35,7 +36,7 @@ export async function fetchAllStudents(grade?: string, name?: string): Promise<S
 export async function getStudentById(id: string): Promise<StudentDTO | null> {
   const url = studentApi(`/${id}`);
 
-  const res = await fetch(url, {
+  const res = await fetchWithAuth(url, {
     method: 'GET',
     credentials: 'include',
     cache: 'no-store',
@@ -56,7 +57,7 @@ export async function updateStudent(id: string, data: any): Promise<StudentDTO> 
 
   const isFormData = data instanceof FormData;
 
-  const res = await fetch(url, {
+  const res = await fetchWithAuth(url, {
     method: 'PATCH',
     credentials: 'include',
     cache: 'no-store',
@@ -75,7 +76,7 @@ export async function updateStudent(id: string, data: any): Promise<StudentDTO> 
 export async function promoteStudentGrades(): Promise<{ message: string; graduatedCount: number }> {
   const url = studentApi('/promote-grades');
 
-  const res = await fetch(url, {
+  const res = await fetchWithAuth(url, {
     method: 'POST',
     credentials: 'include',
     cache: 'no-store',
@@ -93,7 +94,7 @@ export async function promoteStudentGrades(): Promise<{ message: string; graduat
 export async function fetchMyStudents(): Promise<StudentDTO[]> {
   const url = studentApi('/my-students');
 
-  const res = await fetch(url, {
+  const res = await fetchWithAuth(url, {
     method: 'GET',
     credentials: 'include',
     cache: 'no-store',

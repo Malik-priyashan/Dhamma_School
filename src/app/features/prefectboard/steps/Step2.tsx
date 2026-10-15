@@ -19,7 +19,7 @@ export default function Step2({ data, onChange }: StepProps) {
   const { getLocaleValue, setLocaleValue } = useLocaleFieldsPrefect(data, onChange);
 
   return (
-    <div className="bg-white rounded-lg p-6 shadow-sm">
+    <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
           <label className="block">
@@ -163,7 +163,7 @@ export default function Step2({ data, onChange }: StepProps) {
 
       <div className="mt-4">
         <label className="block text-sm font-medium text-slate-700 mb-1">{t('prefect_board_teacherConfirmation')}<span className="text-red-500 ml-1">*</span></label>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <button type="button" onClick={() => fileInputRef.current?.click()} className="inline-flex items-center px-4 py-2 bg-sky-500 text-white rounded-lg shadow hover:bg-sky-600">
             {t('choose_file')}
           </button>

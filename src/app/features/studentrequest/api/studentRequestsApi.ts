@@ -1,4 +1,5 @@
 import { StudentDTO } from "../../studentform/types/types";
+import { fetchWithAuth } from "../../auth/api/authApi";
 
 const STUDENT_REQUEST_PROXY_BASE = '/api/proxy/student-request';
 const STUDENT_PROXY_BASE = '/api/proxy/student';
@@ -26,7 +27,7 @@ export async function fetchAllStudentRequests(
   const queryStr = params.toString();
   const url = `${studentRequestApi()}${queryStr ? `?${queryStr}` : ''}`;
 
-  const res = await fetch(url, {
+  const res = await fetchWithAuth(url, {
     method: 'GET',
     credentials: 'include',
     cache: 'no-store',
@@ -44,7 +45,7 @@ export async function fetchAllStudentRequests(
 export async function acceptStudentRequest(id: string): Promise<any> {
   const url = studentRequestApi(`/${id}/accept`);
 
-  const res = await fetch(url, {
+  const res = await fetchWithAuth(url, {
     method: 'PATCH',
     credentials: 'include',
     cache: 'no-store',
@@ -62,7 +63,7 @@ export async function acceptStudentRequest(id: string): Promise<any> {
 export async function rejectStudentRequest(id: string): Promise<any> {
   const url = studentRequestApi(`/${id}/reject`);
 
-  const res = await fetch(url, {
+  const res = await fetchWithAuth(url, {
     method: 'PATCH',
     credentials: 'include',
     cache: 'no-store',
@@ -80,7 +81,7 @@ export async function rejectStudentRequest(id: string): Promise<any> {
 export async function createStudent(data: StudentDTO): Promise<any> {
   const url = studentApi();
 
-  const res = await fetch(url, {
+  const res = await fetchWithAuth(url, {
     method: 'POST',
     credentials: 'include',
     cache: 'no-store',
@@ -99,7 +100,7 @@ export async function createStudent(data: StudentDTO): Promise<any> {
 export async function updateStudent(id: string, data: any): Promise<any> {
   const url = studentApi(`/${id}`);
 
-  const res = await fetch(url, {
+  const res = await fetchWithAuth(url, {
     method: 'PATCH',
     credentials: 'include',
     cache: 'no-store',
@@ -118,7 +119,7 @@ export async function updateStudent(id: string, data: any): Promise<any> {
 export async function getStudentById(id: string): Promise<any> {
   const url = studentApi(`/${id}`);
 
-  const res = await fetch(url, {
+  const res = await fetchWithAuth(url, {
     method: 'GET',
     credentials: 'include',
     cache: 'no-store',
@@ -137,7 +138,7 @@ export async function getStudentById(id: string): Promise<any> {
 export async function fetchAllStudents(): Promise<any[]> {
   const url = `${studentApi()}?limit=1000`;
 
-  const res = await fetch(url, {
+  const res = await fetchWithAuth(url, {
     method: 'GET',
     credentials: 'include',
     cache: 'no-store',

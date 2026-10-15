@@ -9,7 +9,7 @@ export default function Step1({ data, onChange }: StepProps) {
   // use new model fields directly
 
   return (
-    <div className="bg-white rounded-lg p-6 shadow-sm">
+    <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <label className="block">
           <span className="text-sm font-medium text-slate-700">{t('form.fullName')}<span className="text-red-500 ml-1">*</span></span>
