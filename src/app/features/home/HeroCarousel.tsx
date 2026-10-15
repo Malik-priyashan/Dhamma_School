@@ -26,7 +26,15 @@ export default function HeroCarousel({
           <div
             key={src}
             className={`absolute inset-0 transition-opacity duration-700 ${i === index ? 'opacity-100' : 'opacity-0'}`}>
-            <Image src={src} alt={`slide-${i}`} fill style={{ objectFit: 'cover' }} priority />
+            <Image
+              src={src}
+              alt={`slide-${i}`}
+              fill
+              sizes="100vw"
+              className="object-cover"
+              preload={i === 0}
+              loading={i === 0 ? undefined : "lazy"}
+            />
             <div className="absolute inset-0 bg-black/60" />
           </div>
         ))}

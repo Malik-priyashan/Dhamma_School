@@ -27,6 +27,8 @@ const CircularGallery = React.forwardRef<HTMLDivElement, CircularGalleryProps>(
     const [rotation, setRotation] = useState(0);
     const [isInteracting, setIsInteracting] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
+    const [isVisible, setIsVisible] = useState(false);
+    const [isPageVisible, setIsPageVisible] = useState(true);
 
     // Keep track of current dimensions for responsiveness
     const [dimensions, setDimensions] = useState({ cardWidth: 240, cardHeight: 320, radius: 410 });
@@ -43,6 +45,30 @@ const CircularGallery = React.forwardRef<HTMLDivElement, CircularGalleryProps>(
     const rotationStartXRef = useRef(0);
     const dragDistanceRef = useRef(0);
     const lastPointerXRef = useRef(0);
+
+    useEffect(() => {
+      const container = containerRef.current;
+      if (!container) return;
+
+      if (!('IntersectionObserver' in window)) {
+        const frame = requestAnimationFrame(() => setIsVisible(true));
+        return () => cancelAnimationFrame(frame);
+      }
+
+      const observer = new IntersectionObserver(([entry]) => {
+        setIsVisible(entry.isIntersecting);
+      });
+      observer.observe(container);
+
+      const handleVisibilityChange = () => setIsPageVisible(!document.hidden);
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      handleVisibilityChange();
+
+      return () => {
+        observer.disconnect();
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+      };
+    }, []);
 
     // Handle Resize to make the gallery fully responsive
     useEffect(() => {
@@ -90,6 +116,7 @@ const CircularGallery = React.forwardRef<HTMLDivElement, CircularGalleryProps>(
 
     // Handle scroll to rotate the carousel
     useEffect(() => {
+      if (!isVisible) return;
       const handleScroll = () => {
         if (isDraggingRef.current) return;
 
@@ -114,10 +141,11 @@ const CircularGallery = React.forwardRef<HTMLDivElement, CircularGalleryProps>(
           clearTimeout(scrollTimeoutRef.current);
         }
       };
-    }, []);
+    }, [isVisible]);
 
     // Animation Loop
     useEffect(() => {
+      if (!isVisible || !isPageVisible) return;
       const autoRotate = () => {
         let nextTarget = targetRotationRef.current;
         if (!isInteracting) {
@@ -144,7 +172,7 @@ const CircularGallery = React.forwardRef<HTMLDivElement, CircularGalleryProps>(
           cancelAnimationFrame(animationFrameRef.current);
         }
       };
-    }, [isInteracting, autoRotateSpeed]);
+    }, [isInteracting, autoRotateSpeed, isVisible, isPageVisible]);
 
     // Pointer Interaction Handlers for drag/swipe support
     const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -298,6 +326,8 @@ const CircularGallery = React.forwardRef<HTMLDivElement, CircularGalleryProps>(
                   <img
                     src={item.photo.url}
                     alt={item.photo.text}
+                    loading="lazy"
+                    decoding="async"
                     className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none"
                     style={{ objectPosition: item.photo.pos || 'center' }}
                   />

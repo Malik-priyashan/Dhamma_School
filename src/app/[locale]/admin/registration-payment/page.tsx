@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { fetchWithAuth } from "../../../features/auth/api/authApi";
 
 export default function RegistrationPaymentPage() {
   const [amount, setAmount] = useState<number | "">("");
@@ -17,8 +18,7 @@ export default function RegistrationPaymentPage() {
     setStatus("idle");
     
     try {
-      const base = (process.env.NEXT_PUBLIC_BACKEND_URL || (typeof window !== 'undefined' ? window.location.origin : '')).replace(/\/$/, '');
-      const res = await fetch(`${base}/registration-payment`, {
+      const res = await fetchWithAuth('/api/proxy/registration-payment', {
         method: "POST",
         credentials: "include",
         headers: {

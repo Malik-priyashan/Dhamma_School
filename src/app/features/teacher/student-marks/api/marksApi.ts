@@ -1,4 +1,5 @@
 import { MarkDTO } from "../types/marks.types";
+import { fetchWithAuth } from "../../../auth/api/authApi";
 
 const getBaseUrl = () => {
   return '/api/proxy/marks';
@@ -43,7 +44,7 @@ function mapToBackend(payload: Partial<MarkDTO>): any {
 
 export async function fetchMarksByStudentAndYear(studentId: number | string, academicYear: string): Promise<MarkDTO | null> {
   try {
-    const res = await fetch(`${getBaseUrl()}?studentId=${studentId}&year=${academicYear}`, {
+    const res = await fetchWithAuth(`${getBaseUrl()}?studentId=${studentId}&year=${academicYear}`, {
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
       cache: 'no-store',
@@ -62,7 +63,7 @@ export async function fetchMarksByStudentAndYear(studentId: number | string, aca
 
 export async function fetchMarksByStudent(studentId: number | string): Promise<MarkDTO[]> {
   try {
-    const res = await fetch(`${getBaseUrl()}?studentId=${studentId}`, {
+    const res = await fetchWithAuth(`${getBaseUrl()}?studentId=${studentId}`, {
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
       cache: 'no-store',
@@ -81,7 +82,7 @@ export async function fetchMarksByStudent(studentId: number | string): Promise<M
 
 
 export async function createMark(payload: Partial<MarkDTO>): Promise<MarkDTO> {
-  const res = await fetch(getBaseUrl(), {
+  const res = await fetchWithAuth(getBaseUrl(), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
@@ -97,7 +98,7 @@ export async function createMark(payload: Partial<MarkDTO>): Promise<MarkDTO> {
 }
 
 export async function updateMark(id: number | string, payload: Partial<MarkDTO>): Promise<MarkDTO> {
-  const res = await fetch(`${getBaseUrl()}/${id}`, {
+  const res = await fetchWithAuth(`${getBaseUrl()}/${id}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',

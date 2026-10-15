@@ -1,40 +1,18 @@
 const AUTH_PROXY_BASE = '/api/proxy/auth';
-const AUTH_COOKIE_NAMES = ['accessToken', 'auth_token', 'userRole', 'loginAt'] as const;
+const AUTH_COOKIE_NAMES = ['accessToken', 'auth_token', 'refreshToken', 'userRole', 'loginAt'] as const;
 const ADMIN_CONTACT_THREAD_READ_STORAGE_KEY_PREFIX = 'dhamma_school_admin_contact_thread_read_v1';
 
 export type AuthPayload = Record<string, unknown>;
+
+let refreshInFlight: Promise<boolean> | null = null;
+let currentUserInFlight: ReturnType<typeof requestCurrentUser> | null = null;
 
 function authTarget(path: string) {
   return `${AUTH_PROXY_BASE}/${path}`;
 }
 
-function authFallbackTarget(path: string) {
-  const backendBase = process.env.NEXT_PUBLIC_BACKEND_URL || (typeof window !== 'undefined' ? window.location.origin : '');
-  const normalizedBase = backendBase.replace(/\/$/, '');
-  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-
-  return `${normalizedBase}${normalizedPath}`;
-}
-
 async function fetchAuthResponse(path: string, init: RequestInit) {
-  const targets = [authTarget(path), authFallbackTarget(path)];
-  let lastError: unknown = null;
-
-  for (const target of targets) {
-    try {
-      const res = await fetch(target, init);
-      if (res.ok || target === targets[targets.length - 1]) {
-        return res;
-      }
-
-      const responseText = await res.text();
-      lastError = new Error(responseText || `Request failed ${res.status}`);
-    } catch (error) {
-      lastError = error;
-    }
-  }
-
-  throw lastError instanceof Error ? lastError : new Error('Auth request failed');
+  return fetch(authTarget(path), init);
 }
 
 export function clearClientAuthState() {
@@ -148,22 +126,58 @@ export async function loginUser(payload: AuthPayload) {
   }
 }
 
-export async function fetchCurrentUser() {
-  try {
-    const res = await fetchAuthResponse('me', {
+async function requestCurrentUser() {
+  const getMe = () => fetchAuthResponse('me', {
       method: 'GET',
       credentials: 'include',
       cache: 'no-store',
     });
-    
-    if (!res.ok) {
-      throw new Error('Not logged in or cookie expired');
-    }
-    
-    return await res.json();
-  } catch (err) {
-    throw err;
+
+  let res = await getMe();
+  // The backend returns 200 with null when the access cookie has expired.
+  let user = res.ok ? await res.json() : null;
+  if ((res.status === 401 || !user) && await refreshAccessToken()) {
+    res = await getMe();
+    user = res.ok ? await res.json() : null;
   }
+
+  if (!res.ok || !user) throw new Error('Not logged in or session expired');
+  return user;
+}
+
+export function fetchCurrentUser() {
+  if (!currentUserInFlight) {
+    const request = requestCurrentUser();
+    const sharedRequest = request.finally(() => {
+      if (currentUserInFlight === sharedRequest) currentUserInFlight = null;
+    });
+    currentUserInFlight = sharedRequest;
+  }
+  return currentUserInFlight;
+}
+
+function refreshAccessToken(): Promise<boolean> {
+  if (!refreshInFlight) {
+    refreshInFlight = fetch(authTarget('refresh'), {
+      method: 'POST',
+      credentials: 'include',
+      cache: 'no-store',
+    }).then((res) => res.ok).catch(() => false).finally(() => {
+      refreshInFlight = null;
+    });
+  }
+  return refreshInFlight;
+}
+
+export async function fetchWithAuth(input: string, init: RequestInit = {}): Promise<Response> {
+  const request = () => fetch(input, { ...init, credentials: 'include' });
+  const response = await request();
+
+  if (response.status !== 401 || !(await refreshAccessToken())) {
+    return response;
+  }
+
+  return request();
 }
 
 export async function logoutUser() {

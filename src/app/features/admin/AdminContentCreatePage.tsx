@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale } from "next-intl";
-import { fetchCurrentUser } from "../auth/api/authApi";
+import { fetchCurrentUser, fetchWithAuth } from "../auth/api/authApi";
 import { getUserRole } from "../../../lib/authUtils";
 import LoadingPage from "../../components/ui/LoadingPage";
 import { CLOUDINARY_CLOUD_NAME, CLOUDINARY_UPLOAD_PRESET } from "../../../config";
@@ -34,10 +34,6 @@ export default function AdminContentCreatePage({
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [status, setStatus] = useState<{ success?: string; error?: string } | null>(null);
-
-  const baseUrl = useMemo(() => {
-    return ((process.env.NEXT_PUBLIC_BACKEND_URL) || (typeof window !== 'undefined' ? window.location.origin : '')).replace(/\/$/, "");
-  }, []);
 
   const uploadImageToCloudinary = async (file: File) => {
     if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
@@ -135,7 +131,7 @@ export default function AdminContentCreatePage({
         formData.append("image", imageUrl);
       }
 
-      const res = await fetch(`${baseUrl}${endpoint}`, {
+      const res = await fetchWithAuth(`/api/proxy${endpoint}`, {
         method: "POST",
         credentials: "include",
         body: formData,

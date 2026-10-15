@@ -9,10 +9,11 @@ const intlMiddleware = createMiddleware({
 
 export default function middleware(req: NextRequest) {
   const token = req.cookies.get("accessToken")?.value || req.cookies.get("auth_token")?.value;
+  const hasSession = Boolean(token || req.cookies.get("refreshToken")?.value);
   console.log("[middleware] token check", {
     hasAccessToken: Boolean(req.cookies.get("accessToken")?.value),
     hasAuthToken: Boolean(req.cookies.get("auth_token")?.value),
-    isAuthenticated: Boolean(token),
+    isAuthenticated: hasSession,
   });
   const { pathname } = req.nextUrl;
   
@@ -23,7 +24,7 @@ export default function middleware(req: NextRequest) {
   const isProtectedRoute = protectedRoutes.some(route => pathname.includes(route));
 
   // If trying to access a protected route without being logged in, redirect to login
-  if (!token && isProtectedRoute) {
+  if (!hasSession && isProtectedRoute) {
     const localePrefix = locales.find((l) => pathname.startsWith(`/${l}`)) || defaultLocale;
     const url = req.nextUrl.clone();
     url.pathname = `/${localePrefix}/login`;

@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale } from "next-intl";
-import { fetchCurrentUser } from "../auth/api/authApi";
+import { fetchCurrentUser, fetchWithAuth } from "../auth/api/authApi";
 import { getUserRole } from "../../../lib/authUtils";
 import LoadingPage from "../../components/ui/LoadingPage";
 import { CLOUDINARY_CLOUD_NAME, CLOUDINARY_UPLOAD_PRESET } from "../../../config";
@@ -673,7 +673,7 @@ export default function AdminContentManagerPage({
     setError(null);
 
     try {
-      const response = await fetch(`/api/proxy${endpoint}`, {
+      const response = await fetchWithAuth(`/api/proxy${endpoint}`, {
         method: "GET",
         credentials: "include",
         cache: "no-store",
@@ -758,7 +758,7 @@ export default function AdminContentManagerPage({
       const isEditing = Boolean(editingItem);
       const targetUrl = isEditing ? `/api/proxy${endpoint}/${editingItem?.id}` : `/api/proxy${endpoint}`;
 
-      const response = await fetch(targetUrl, {
+      const response = await fetchWithAuth(targetUrl, {
         method: isEditing ? "PATCH" : "POST",
         credentials: "include",
         cache: "no-store",
@@ -792,7 +792,7 @@ export default function AdminContentManagerPage({
     setStatus(null);
 
     try {
-      const response = await fetch(`/api/proxy${endpoint}/${item.id}`, {
+      const response = await fetchWithAuth(`/api/proxy${endpoint}/${item.id}`, {
         method: "DELETE",
         credentials: "include",
         cache: "no-store",

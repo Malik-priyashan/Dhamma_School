@@ -8,6 +8,7 @@ import { fetchContactUsMessagesByUser, submitContactUsMessage } from "../../feat
 import { fetchMyStudents } from "../../features/students/api/studentsApi";
 
 const CONTACT_CHAT_STORAGE_KEY_PREFIX = "dhamma_school_contact_chat_v2";
+const CONTACT_CHAT_ECHO_MATCH_WINDOW_MS = 2 * 60 * 1000;
 
 type ChatMessage = {
   id: string;
@@ -81,6 +82,68 @@ function formatMessageTimestamp(value: string): string {
   return parsed.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
+function isLocallyCreatedUserMessage(message: ChatMessage): boolean {
+  return message.sender === "user" && Boolean(message.clientMessageId) && message.id === message.clientMessageId;
+}
+
+function shouldPersistMessageLocally(message: ChatMessage): boolean {
+  // Once a student message is confirmed, remote history becomes its source of truth.
+  // Keeping the optimistic copy in localStorage can show it again after logout/login.
+  return !isLocallyCreatedUserMessage(message) || message.status !== "sent";
+}
+
+function isSameMessageDelivery(first: ChatMessage, second: ChatMessage): boolean {
+  if (first.clientMessageId && first.clientMessageId === second.clientMessageId) return true;
+  if (first.id && first.id === second.id) return true;
+
+  const firstCreatedAt = first.createdAt || first.timestamp;
+  const secondCreatedAt = second.createdAt || second.timestamp;
+
+  if (
+    first.sender !== second.sender ||
+    first.text.trim() !== second.text.trim() ||
+    (!isLocallyCreatedUserMessage(first) && !isLocallyCreatedUserMessage(second))
+  ) {
+    return false;
+  }
+
+  const firstTime = parseDateValue(firstCreatedAt);
+  const secondTime = parseDateValue(secondCreatedAt);
+
+  return firstTime > 0 && secondTime > 0 && Math.abs(firstTime - secondTime) <= CONTACT_CHAT_ECHO_MATCH_WINDOW_MS;
+}
+
+function mergeMessageVersions(first: ChatMessage, second: ChatMessage): ChatMessage {
+  const firstIsLocal = isLocallyCreatedUserMessage(first);
+  const secondIsLocal = isLocallyCreatedUserMessage(second);
+  const preferred = firstIsLocal && !secondIsLocal ? second : secondIsLocal && !firstIsLocal ? first : second;
+  const fallback = preferred === first ? second : first;
+
+  return {
+    ...fallback,
+    ...preferred,
+    clientMessageId: first.clientMessageId || second.clientMessageId,
+    status: first.status === "sent" || second.status === "sent" ? "sent" : preferred.status,
+  };
+}
+
+function dedupeMessages(messages: ChatMessage[]): ChatMessage[] {
+  const deduped: ChatMessage[] = [];
+
+  for (const message of messages) {
+    const duplicateIndex = deduped.findIndex((existing) => isSameMessageDelivery(existing, message));
+
+    if (duplicateIndex === -1) {
+      deduped.push(message);
+      continue;
+    }
+
+    deduped[duplicateIndex] = mergeMessageVersions(deduped[duplicateIndex], message);
+  }
+
+  return deduped;
+}
+
 function getContactStorageKey(userId: string) {
   return `${CONTACT_CHAT_STORAGE_KEY_PREFIX}:${userId || "guest"}`;
 }
@@ -103,31 +166,7 @@ function normalizeStoredMessages(messages: unknown): ChatMessage[] {
       status: msg.status === "sending" ? "failed" : msg.status,
     }));
 
-  const deduped = new Map<string, ChatMessage>();
-
-  for (const msg of normalized) {
-    const key = msg.clientMessageId || `${msg.sender}|${msg.text.trim()}|${msg.createdAt || msg.timestamp}`;
-
-    if (!deduped.has(key)) {
-      deduped.set(key, msg);
-      continue;
-    }
-
-    const prev = deduped.get(key)!;
-    const prevTime = parseDateValue(prev.createdAt || prev.timestamp);
-    const msgTime = parseDateValue(msg.createdAt || msg.timestamp);
-
-    if (msg.status === "sent" && prev.status !== "sent") {
-      deduped.set(key, msg);
-      continue;
-    }
-
-    if (msgTime > prevTime) {
-      deduped.set(key, msg);
-    }
-  }
-
-  return Array.from(deduped.values());
+  return dedupeMessages(normalized.filter(shouldPersistMessageLocally));
 }
 
 function getRecordUserId(record: Record<string, unknown>): string {
@@ -253,55 +292,9 @@ function normalizeUserMessages(payload: unknown, userId: string): ChatMessage[] 
 }
 
 function mergeMessages(existing: ChatMessage[], incoming: ChatMessage[]) {
-  function fingerprint(message: ChatMessage) {
-    const createdAt = message.createdAt || message.timestamp;
-    return `${message.sender}|${message.text.trim()}|${createdAt}`;
-  }
-
-  function getMessageKey(message: ChatMessage) {
-    if (message.clientMessageId) {
-      return `client:${message.clientMessageId}`;
-    }
-
-    const id = message.id || "";
-    const isUserMessage = message.sender === "user";
-
-    if (isUserMessage) {
-      const createdAt = message.createdAt || message.timestamp;
-      return `user:${message.text.trim()}|${createdAt}`;
-    }
-
-    return `system:${id || fingerprint(message)}`;
-  }
-
-  const combined = [...existing, ...incoming];
-  const keyed = new Map<string, ChatMessage>();
-
-  for (const msg of combined) {
-    const key = getMessageKey(msg);
-
-    if (!keyed.has(key)) {
-      keyed.set(key, msg);
-      continue;
-    }
-
-    const prev = keyed.get(key)!;
-
-    // prefer messages with status 'sent' over 'sending'/'failed'
-    if (prev.status !== "sent" && msg.status === "sent") {
-      keyed.set(key, { ...prev, ...msg, id: prev.id || msg.id, clientMessageId: prev.clientMessageId || msg.clientMessageId });
-      continue;
-    }
-
-    // if timestamps differ, keep the one with later createdAt
-    const prevTime = parseDateValue(prev.createdAt || prev.timestamp);
-    const msgTime = parseDateValue(msg.createdAt || msg.timestamp);
-    if (msgTime > prevTime) {
-      keyed.set(key, { ...prev, ...msg, id: prev.id || msg.id, clientMessageId: prev.clientMessageId || msg.clientMessageId });
-    }
-  }
-
-  return Array.from(keyed.values()).sort((a, b) => parseDateValue(a.createdAt || a.timestamp) - parseDateValue(b.createdAt || b.timestamp));
+  return dedupeMessages([...existing, ...incoming]).sort(
+    (a, b) => parseDateValue(a.createdAt || a.timestamp) - parseDateValue(b.createdAt || b.timestamp),
+  );
 }
 
 function readStoredChatState(userId: string): StoredChatState | null {
@@ -333,7 +326,7 @@ function writeStoredChatState(userId: string, state: StoredChatState) {
         chatName: state.chatName || "",
         nameInput: state.nameInput || "",
         messageInput: state.messageInput || "",
-        messages: state.messages || [],
+        messages: (state.messages || []).filter(shouldPersistMessageLocally),
       }),
     );
   } catch (error) {

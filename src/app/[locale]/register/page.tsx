@@ -64,12 +64,12 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row-reverse bg-neutral-950 font-sans selection:bg-neutral-900 selection:text-white overflow-hidden">
+    <div className="min-h-screen flex flex-col lg:flex-row-reverse bg-neutral-950 font-sans selection:bg-neutral-900 selection:text-white">
       {/* Right side panel - Dark branding panel (desktop only, displays on right due to flex-row-reverse) */}
       <motion.div 
         layoutId="auth-branding-panel"
         transition={{ type: "spring", stiffness: 90, damping: 18 }}
-        className="hidden md:flex md:w-1/2 bg-black text-white p-16 flex-col justify-between relative overflow-hidden"
+        className="hidden lg:flex lg:w-1/2 bg-black text-white p-10 xl:p-16 flex-col justify-between relative overflow-hidden"
       >
         <Image
           src="/hero/Lord%20Buddha.jpg"
@@ -170,14 +170,14 @@ export default function RegisterPage() {
       <motion.div 
         layoutId="auth-form-card-container"
         transition={{ type: "spring", stiffness: 90, damping: 18 }}
-        className="w-full md:w-1/2 bg-neutral-50 flex items-center justify-center p-6 md:p-12 relative min-h-screen md:min-h-0"
+        className="w-full min-w-0 lg:w-1/2 bg-neutral-50 flex items-center justify-center px-3 pb-6 pt-20 sm:px-6 lg:p-8 xl:p-12 relative min-h-screen"
       >
         {/* Language switch button at top right */}
         {/* Note: Kept as static switcher layout matching the login component */}
         <motion.div 
           layoutId="auth-lang-pill"
           transition={{ type: "spring", stiffness: 90, damping: 18 }}
-          className="absolute top-6 right-6 flex items-center gap-1 bg-white rounded-full p-1 border border-neutral-200/80 shadow-sm z-20"
+          className="absolute top-4 right-4 sm:top-6 sm:right-6 flex items-center gap-1 bg-white rounded-full p-1 border border-neutral-200/80 shadow-sm z-20"
         >
           <button
             onClick={() => changeLocale("en")}
@@ -199,10 +199,10 @@ export default function RegisterPage() {
         <motion.div
           layoutId="auth-form-card"
           transition={{ type: "spring", stiffness: 90, damping: 18 }}
-          className="w-full max-w-md bg-white border border-neutral-200/80 rounded-3xl p-8 md:p-10 shadow-xl relative mt-4 mb-4"
+          className="w-full min-w-0 max-w-md bg-white border border-neutral-200/80 rounded-2xl sm:rounded-3xl p-5 sm:p-8 xl:p-10 shadow-xl relative my-4"
         >
           {/* Logo visible only on mobile/stacked layouts */}
-          <div className="md:hidden flex justify-center mb-6">
+          <div className="lg:hidden flex justify-center mb-6">
             <div className="w-24 h-28 rounded-[12px] overflow-hidden bg-white/50 border border-white/70 p-1 flex items-center justify-center shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_12px_32px_rgba(15,23,42,0.12)] backdrop-blur-md">
               <Image src="/logo/logo.jpeg" alt="Logo" width={96} height={112} className="h-full w-full rounded-[8px] object-contain" />
             </div>

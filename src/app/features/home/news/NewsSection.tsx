@@ -281,7 +281,7 @@ export default function NewsSection({ mode = "preview" }: NewsSectionProps) {
       className="group flex min-h-52 cursor-pointer gap-4 rounded-3xl bg-white p-3.5 text-left shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_35px_rgba(0,0,0,0.08)] focus:outline-none focus:ring-2 focus:ring-blue-200"
     >
       <div className="relative h-28 w-28 shrink-0 overflow-hidden rounded-2xl bg-black/5 sm:h-40 sm:w-40">
-        <img src={item.image} alt={item.title} className="h-full w-full object-cover transition duration-300 group-hover:scale-105" />
+        <img src={item.image} alt={item.title} loading="lazy" decoding="async" className="h-full w-full object-cover transition duration-300 group-hover:scale-105" />
         <div className="absolute inset-0 bg-black/10" />
       </div>
 
@@ -400,7 +400,7 @@ export default function NewsSection({ mode = "preview" }: NewsSectionProps) {
                   </div>
 
                   <div className="mt-2.5 flex items-center justify-center overflow-hidden bg-white px-2.5">
-                    <img src={item.image} alt={item.title} className="h-52 w-full object-contain sm:h-56" />
+                    <img src={item.image} alt={item.title} loading="lazy" decoding="async" className="h-52 w-full object-contain sm:h-56" />
                   </div>
 
                   <div className="flex flex-1 flex-col px-4 pb-12 pt-2.5">
@@ -498,7 +498,7 @@ export default function NewsSection({ mode = "preview" }: NewsSectionProps) {
               </div>
 
               <div className="mt-4 overflow-hidden bg-slate-100">
-                <img src={item.image} alt={item.title} className="h-56 w-full object-cover transition duration-300 group-hover:scale-[1.02] sm:h-60" />
+                <img src={item.image} alt={item.title} loading="lazy" decoding="async" className="h-56 w-full object-cover transition duration-300 group-hover:scale-[1.02] sm:h-60" />
               </div>
 
               <div className="px-5 pb-5 pt-4 sm:px-6">

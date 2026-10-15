@@ -14,7 +14,10 @@ async function resolveChannelId(identifier: string) {
   const url = `https://www.youtube.com/${path}`;
   try {
     // Use a browser-like user-agent to increase chance of full HTML being returned
-    const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)' } });
+    const res = await fetch(url, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)' },
+      next: { revalidate: 300 },
+    });
     if (!res.ok) return null;
     const txt = await res.text();
 
@@ -45,7 +48,10 @@ async function fetchRssVideos(channelId: string) {
   // First try the simple RSS feed
   const feedUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
   try {
-    const res = await fetch(feedUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+    const res = await fetch(feedUrl, {
+      headers: { 'User-Agent': 'Mozilla/5.0' },
+      next: { revalidate: 300 },
+    });
     if (res.ok) {
       const xml = await res.text();
       const entries = Array.from(xml.matchAll(/<entry>[\s\S]*?<\/entry>/g)).map((m) => m[0]);
@@ -65,7 +71,10 @@ async function fetchRssVideos(channelId: string) {
 
   // Fallback: fetch the channel's /videos page and parse ytInitialData JSON
   const videosPage = `https://www.youtube.com/channel/${channelId}/videos`;
-  const res2 = await fetch(videosPage, { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' } });
+  const res2 = await fetch(videosPage, {
+    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
+    next: { revalidate: 300 },
+  });
   if (!res2.ok) throw new Error('Failed to fetch channel videos page');
   const txt = await res2.text();
 
@@ -130,7 +139,9 @@ export async function GET() {
 
   try {
     const videos = await fetchRssVideos(channelId);
-    return NextResponse.json({ videos });
+    return NextResponse.json({ videos }, {
+      headers: { 'Cache-Control': 'public, max-age=300, s-maxage=300, stale-while-revalidate=600' },
+    });
   } catch (err) {
     console.error('[youtube] fetchRssVideos error:', err);
     return NextResponse.json({ error: (err as Error).message || 'Failed to fetch videos' }, { status: 500 });

@@ -1,3 +1,5 @@
+import { fetchWithAuth } from '../../auth/api/authApi';
+
 const USERS_PROXY_BASE = '/api/proxy/users';
 
 function usersApi(path = '') {
@@ -8,7 +10,7 @@ export async function fetchAllTeachers() {
   const target = usersApi('/teachers');
 
   try {
-    const res = await fetch(target, {
+    const res = await fetchWithAuth(target, {
       method: 'GET',
       credentials: 'include',
       cache: 'no-store',
@@ -29,7 +31,7 @@ export async function updateTeacherStatus(id: string, isActive: boolean) {
   const target = usersApi(`/${id}/status`);
 
   try {
-    const res = await fetch(target, {
+    const res = await fetchWithAuth(target, {
       method: 'PATCH',
       credentials: 'include',
       cache: 'no-store',
@@ -52,7 +54,7 @@ export async function deleteUser(id: string) {
   const target = usersApi(`/${id}`);
 
   try {
-    const res = await fetch(target, {
+    const res = await fetchWithAuth(target, {
       method: 'DELETE',
       credentials: 'include',
       cache: 'no-store',

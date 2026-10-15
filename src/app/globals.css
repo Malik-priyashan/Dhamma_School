@@ -28,11 +28,21 @@ body {
 .student-registration-form label > span {
   color: #334155;
   font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.student-registration-form,
+.student-registration-form .grid > *,
+.student-registration-form label {
+  min-width: 0;
 }
 
 .student-registration-form input:not([type="checkbox"]):not([type="file"]),
 .student-registration-form select,
 .student-registration-form textarea {
+  box-sizing: border-box;
+  max-width: 100%;
+  min-width: 0;
   min-height: 46px;
   border-color: #cbd5e1 !important;
   border-radius: 1rem !important;

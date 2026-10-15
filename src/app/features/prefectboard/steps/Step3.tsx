@@ -15,7 +15,7 @@ export default function Step3({ data, onChange }: StepProps) {
   // use new `parentsName` field
 
   return (
-    <div className="bg-white rounded-lg p-6 shadow-sm space-y-4">
+    <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm space-y-4">
       <div>
         <label className="flex items-start gap-3">
           <input required aria-required="true" type="checkbox" name="studentAgreement" checked={!!data.studentAgreement} onChange={handleChange} className="mt-1" />

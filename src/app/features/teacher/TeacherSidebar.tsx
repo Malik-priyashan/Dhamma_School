@@ -13,6 +13,7 @@ export default function TeacherSidebar({ setIsAuthenticated }: TeacherSidebarPro
   const router = useRouter();
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   function go(path: string) {
     setIsOpen(false);
@@ -21,6 +22,9 @@ export default function TeacherSidebar({ setIsAuthenticated }: TeacherSidebarPro
   }
 
   const logout = async () => {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+
     try {
       await logoutUser();
     } catch (e) {
@@ -103,9 +107,15 @@ export default function TeacherSidebar({ setIsAuthenticated }: TeacherSidebarPro
         <div className="p-5 border-t border-slate-100 bg-white space-y-4">
           <button
             onClick={logout}
-            className="w-full bg-slate-50 border border-slate-200 text-slate-700 px-4 py-2.5 rounded-xl font-medium hover:bg-slate-100 hover:text-red-600 transition duration-200"
+            type="button"
+            disabled={isLoggingOut}
+            aria-busy={isLoggingOut}
+            className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 font-medium text-slate-700 transition duration-200 hover:bg-slate-100 hover:text-red-600 disabled:cursor-wait disabled:opacity-70"
           >
-            Logout
+            {isLoggingOut && (
+              <span aria-hidden="true" className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-red-600" />
+            )}
+            {isLoggingOut ? 'Logging out...' : 'Logout'}
           </button>
         </div>
       </aside>

@@ -2,12 +2,21 @@
 
 import HeroCarousel from "../features/home/HeroCarousel";
 import Hero from "../features/home/Hero";
-import YouTubeVideos from "../features/home/YouTubeVideos";
+import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 import NewsSection from "../features/home/news/NewsSection";
 import EventsSection from "../features/home/events/EventsSection";
-import HomeHighlightsSection from "../features/home/HomeHighlightsSection";
+import DeferredHomeSection from "../features/home/DeferredHomeSection";
 import { getUserRole } from "../../lib/authUtils";
+
+const HomeHighlightsSection = dynamic(() => import("../features/home/HomeHighlightsSection"), {
+  ssr: false,
+  loading: () => <div className="min-h-[70vh] rounded-4xl bg-slate-50" aria-hidden="true" />,
+});
+const YouTubeVideos = dynamic(() => import("../features/home/YouTubeVideos"), {
+  ssr: false,
+  loading: () => <div className="min-h-[600px] bg-slate-50" aria-hidden="true" />,
+});
 
 export default function LocalePage() {
   const t = useTranslations();
@@ -45,7 +54,9 @@ export default function LocalePage() {
                   <EventsSection />
                 </div>
                 <div className="mt-8">
-                  <HomeHighlightsSection />
+                  <DeferredHomeSection placeholderClassName="min-h-[70vh] rounded-4xl bg-slate-50">
+                    <HomeHighlightsSection />
+                  </DeferredHomeSection>
                 </div>
               </div>
             </section>
@@ -53,7 +64,9 @@ export default function LocalePage() {
 
           {/* Videos section should span full width */}
           <div className="w-full">
-            <YouTubeVideos />
+            <DeferredHomeSection placeholderClassName="min-h-[600px] bg-slate-50">
+              <YouTubeVideos />
+            </DeferredHomeSection>
           </div>
         </>
       )}

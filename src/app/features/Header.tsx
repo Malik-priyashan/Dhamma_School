@@ -3,12 +3,14 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useLocale, useTranslations } from "next-intl";
 import { locales } from "../../config";
 import { clearClientAuthState, fetchCurrentUser, logoutUser } from "./auth/api/authApi";
-import { getUserRole } from "../../lib/authUtils";
-import TeacherSidebar from "./teacher/TeacherSidebar";
-import AdminSidebar from "./admin/AdminSidebar";
+
+const TeacherSidebar = dynamic(() => import("./teacher/TeacherSidebar"));
+const AdminSidebar = dynamic(() => import("./admin/AdminSidebar"));
 
 type CurrentUser = {
   id?: string | number;
@@ -20,24 +22,7 @@ type CurrentUser = {
   loginAt?: string;
   loggedInAt?: string;
   createdAt?: string;
-  iat?: number;
 };
-
-function decodeJwtPayload(token: string): Record<string, unknown> | null {
-  try {
-    const base64Url = token.split('.')[1];
-    if (!base64Url) return null;
-
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = decodeURIComponent(atob(base64).split('').map((c) => {
-      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-    }).join(''));
-
-    return JSON.parse(jsonPayload);
-  } catch {
-    return null;
-  }
-}
 
 function getLoginTimestamp(user: CurrentUser | null) {
   const directTimestamp = user?.loginAt || user?.loggedInAt || user?.createdAt;
@@ -49,19 +34,6 @@ function getLoginTimestamp(user: CurrentUser | null) {
       if (storedLoginAt) return storedLoginAt;
     } catch {}
   }
-
-  if (typeof window === 'undefined') return null;
-
-  try {
-    const match = document.cookie.match(new RegExp('(^| )accessToken=([^;]+)'));
-    if (!match?.[2]) return null;
-
-    const payload = decodeJwtPayload(match[2]);
-    const issuedAt = payload?.iat;
-    if (typeof issuedAt === 'number') {
-      return new Date(issuedAt * 1000).toISOString();
-    }
-  } catch {}
 
   return null;
 }
@@ -84,12 +56,14 @@ export default function Header() {
   const locale = useLocale();
   const t = useTranslations();
   const pathname = usePathname();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [verifiedPathname, setVerifiedPathname] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>('');
   const [userEmail, setUserEmail] = useState<string>('');
   const [loginAt, setLoginAt] = useState<string | null>(null);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
 
   const [eventsMenuOpen, setEventsMenuOpen] = useState(false);
@@ -104,6 +78,9 @@ export default function Header() {
   }, [userName, userEmail]);
 
   async function handleLogout() {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+
     try {
       await logoutUser();
     } catch (e) {
@@ -132,16 +109,8 @@ export default function Header() {
   }
 
   useEffect(() => {
+    if (pathname?.includes('/login') || pathname?.includes('/register')) return;
     let isMounted = true;
-
-    // Immediately get role from token
-    if (typeof window !== 'undefined') {
-      Promise.resolve().then(() => {
-        if (isMounted) {
-          setUserRole(getUserRole());
-        }
-      });
-    }
 
     async function syncAuth() {
       try {
@@ -150,10 +119,9 @@ export default function Header() {
           setIsAuthenticated(true);
           setUserName(user?.fullName || user?.name || 'User');
           setUserEmail(user?.email || '');
-          if (user?.role || user?.Role) {
-            setUserRole((user.role || user.Role) ?? null);
-          }
+          setUserRole((user.role || user.Role || '').toUpperCase() || null);
           setLoginAt(getLoginTimestamp(user));
+          setVerifiedPathname(pathname);
         }
       } catch {
         if (isMounted) {
@@ -162,6 +130,7 @@ export default function Header() {
           setUserName('');
           setUserEmail('');
           setLoginAt(null);
+          setVerifiedPathname(pathname);
         }
       }
     }
@@ -185,11 +154,6 @@ export default function Header() {
     };
   }, [pathname]);
 
-  function go(path: string) {
-    setMobileMenuOpen(false);
-    router.push(`/${locale}${path}`);
-  }
-
   function changeLocale(next: string) {
     // Replace the locale segment in the current pathname so user stays on the same page
     try {
@@ -212,85 +176,105 @@ export default function Header() {
 
   // No inline popup form here — navigation goes to the competitions page.
   const isAuthPage = pathname?.includes('/login') || pathname?.includes('/register');
+  const hasVerifiedSession = isAuthenticated === true && verifiedPathname === pathname;
+  const isSignedOut = isAuthenticated === false && verifiedPathname === pathname;
   if (isAuthPage) {
     return null;
   }
 
-  if (userRole === 'ADMIN') {
+  if (hasVerifiedSession && userRole === 'ADMIN') {
     return <AdminSidebar setIsAuthenticated={setIsAuthenticated} />;
   }
 
-  if (userRole === 'TEACHER') {
+  if (hasVerifiedSession && userRole === 'TEACHER') {
     return <TeacherSidebar setIsAuthenticated={setIsAuthenticated} />;
   }
+
+  const navigationLinks = [
+    { path: '/', label: t('home') },
+    { path: '/news', label: t('news_section_label') || 'News' },
+    { path: '/contact-us', label: t('contact_us') || 'Contact Us' },
+    { path: '/events', label: t('events') || t('events_section_label') || 'Events', isDropdown: true, subPaths: [
+      { path: '/events#upcoming', label: t('upcoming_events') || 'Upcoming Events' },
+      { path: '/events#past', label: t('past_events') || 'Past Events' },
+    ] },
+    { path: '/student/prefect-board', label: t('prefect_board') || 'Prefect Board', studentOnly: true },
+    { path: '/student/announcing', label: t('announcing') || 'Announcing', studentOnly: true },
+    { path: '/student/marks', label: t('marks') || 'Marks', studentOnly: true },
+  ].filter(link => !link.studentOnly || (hasVerifiedSession && userRole === 'STUDENT'));
+
+  function isActiveLink(path: string) {
+    const basePath = path.split('#')[0];
+    const base = basePath === '/' ? `/${locale}` : `/${locale}${basePath}`;
+    return basePath === '/'
+      ? pathname === '/' || pathname === base
+      : pathname === base || pathname?.startsWith(`${base}/`);
+  }
+
+  const desktopLinkClass = (active: boolean) => `group relative inline-flex min-h-10 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-2 text-[13px] font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 ${
+    active
+      ? 'bg-slate-900 text-white shadow-[0_8px_18px_rgba(15,23,42,0.22)]'
+      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950'
+  }`;
+
+  const mobileLinkClass = (active: boolean) => `flex min-h-11 w-full items-center justify-between rounded-2xl px-4 py-2.5 text-left text-sm font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 ${
+    active
+      ? 'bg-slate-900 text-white shadow-[0_8px_20px_rgba(15,23,42,0.18)]'
+      : 'text-slate-700 hover:bg-slate-100 hover:text-slate-950'
+  }`;
+
   return (
-    <header className="fixed top-6 left-0 right-0 z-50 pointer-events-none">
-      <nav className="mx-auto max-w-7xl w-[calc(100%-1.5rem)] md:w-[calc(100%-2rem)] pointer-events-auto bg-white/95 backdrop-blur-2xl backdrop-saturate-125 rounded-3xl md:rounded-full px-4 md:px-8 py-4 border border-slate-200/80">
-        <div className="flex items-center justify-between px-1 md:px-3">
-          <div className="flex items-center gap-2 md:gap-6">
+    <header className="pointer-events-none fixed inset-x-0 top-4 z-50 sm:top-5">
+      <nav aria-label="Main navigation" className="pointer-events-auto mx-auto w-[calc(100%-1.5rem)] max-w-7xl rounded-[1.75rem] border border-white/80 bg-white/90 px-3 py-2.5 shadow-[0_16px_50px_rgba(15,23,42,0.13)] ring-1 ring-slate-200/70 backdrop-blur-2xl sm:w-[calc(100%-2rem)] sm:px-4 xl:rounded-full xl:px-5">
+        <div className="flex items-center justify-between gap-3 xl:grid xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
+          <div className="flex items-center gap-2">
             {/* Mobile menu button */}
             <button 
-              className="md:hidden p-2.5 text-slate-700 bg-linear-to-br from-blue-100 to-blue-50 hover:from-blue-200 hover:to-blue-100 rounded-full transition-all duration-300 shadow-sm hover:shadow-md"
+              type="button"
+              className="rounded-full border border-slate-200 bg-slate-50 p-2.5 text-slate-700 transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 xl:hidden"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               aria-label="Toggle menu"
+              aria-expanded={mobileMenuOpen}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={mobileMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"}></path></svg>
             </button>
 
-            <button onClick={() => go("/")}
-                      className="flex items-center gap-3 cursor-pointer hover:opacity-95 transition-opacity transform-gpu hover:-translate-y-0.5 shrink-0" aria-label={t('home')}>
-                    <div className="w-10 h-10 md:w-12 md:h-12 rounded-full overflow-hidden shrink-0 shadow-lg bg-white border-2 border-slate-200/70 hover:shadow-2xl hover:shadow-blue-300/30 transition-all duration-300 ring-1 ring-white/60">
+            <Link href={`/${locale}`}
+                      className="flex shrink-0 cursor-pointer items-center rounded-full p-0.5 transition-transform duration-200 hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500" aria-label={t('home')}>
+                    <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full border border-slate-200 bg-white shadow-sm xl:h-11 xl:w-11">
                 <Image src="/logo/logo.jpeg" alt="logo" width={50} height={50} className="w-full h-full object-contain" />
               </div>
-            </button>
+            </Link>
+          </div>
 
-            <ul className="hidden md:flex items-center text-sm font-medium absolute left-1/2 transform -translate-x-1/2 space-x-2">
-              {[
-                { path: '/', label: t('home') },
-                { path: '/news', label: t('news_section_label') || 'News' },
-                { path: '/contact-us', label: t('contact_us') || 'Contact Us' },
-                { path: '/events', label: t('events') || t('events_section_label') || 'Events', isDropdown: true, subPaths: [
-                  { path: '/events#upcoming', label: t('upcoming_events') || 'Upcoming Events' },
-                  { path: '/events#past', label: t('past_events') || 'Past Events' }
-                ] },
-                { path: '/student/prefect-board', label: t('prefect_board') || 'Prefect Board', studentOnly: true },
-                { path: '/student/announcing', label: t('announcing') || 'Announcing', studentOnly: true },
-                { path: '/student/marks', label: t('marks') || 'Marks', studentOnly: true },
-              ]
-              .filter(link => !link.studentOnly || userRole === 'STUDENT')
+            <ul className="hidden items-center justify-self-center gap-0.5 rounded-full border border-slate-200/80 bg-slate-50/80 p-1 xl:flex">
+              {navigationLinks
               .map(({ path, label, isDropdown, subPaths }) => {
-                const basePath = path.split('#')[0];
-                const base = basePath === '/' ? `/${locale}` : `/${locale}${basePath}`;
-                const isActive = basePath === '/'
-                  ? pathname === base
-                  : (pathname === base || pathname?.startsWith(base + '/'));
+                const isActive = isActiveLink(path);
 
                 if (isDropdown) {
                   return (
-                    <li key={path} className="mx-0.5 relative" ref={path === '/events' ? eventsMenuRef : null} onMouseEnter={() => setEventsMenuOpen(true)} onMouseLeave={() => setEventsMenuOpen(false)}>
+                    <li key={path} className="relative" ref={path === '/events' ? eventsMenuRef : null} onMouseEnter={() => setEventsMenuOpen(true)} onMouseLeave={() => setEventsMenuOpen(false)}>
                       <button
+                        type="button"
                         onClick={() => setEventsMenuOpen(!eventsMenuOpen)}
-                        className={`relative px-3 py-2 rounded-full transition-all duration-300 flex items-center gap-2 ${
-                          isActive || eventsMenuOpen
-                            ? 'bg-linear-to-r from-blue-100 to-blue-50 text-blue-800 font-semibold shadow-md'
-                            : 'text-slate-700 hover:text-slate-900 hover:bg-white/40'
-                        }`}
+                        aria-current={isActive ? 'page' : undefined}
+                        aria-expanded={eventsMenuOpen}
+                        className={desktopLinkClass(isActive)}
                       >
-                        <span className="leading-none">{label}</span>
-                        <svg className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${eventsMenuOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor">
+                        {isActive && <span aria-hidden="true" className="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-300" />}
+                        <span>{label}</span>
+                        <svg className={`h-4 w-4 transition-transform duration-200 ${isActive ? 'text-slate-300' : 'text-slate-400'} ${eventsMenuOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                           <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.938a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z" clipRule="evenodd" />
                         </svg>
-                        {(isActive && !eventsMenuOpen) && (
-                          <span className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-10 h-1 bg-linear-to-r from-blue-500 to-blue-700 rounded-full shadow-sm" />
-                        )}
                       </button>
                       {eventsMenuOpen && (
-                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 pt-2 w-48 z-50">
-                           <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden py-2 flex flex-col">
+                        <div className="absolute left-1/2 top-full z-50 w-52 -translate-x-1/2 pt-3">
+                           <div className="flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white p-1.5 shadow-[0_16px_40px_rgba(15,23,42,0.15)]">
                              {subPaths?.map((sub) => (
-                                <button key={sub.path} onClick={() => { setEventsMenuOpen(false); go(sub.path); }} className="w-full text-left px-4 py-2 hover:bg-slate-50 text-slate-700 hover:text-blue-700 transition-colors text-sm font-medium">
+                                <Link key={sub.path} href={`/${locale}${sub.path}`} onClick={() => setEventsMenuOpen(false)} className="w-full rounded-xl px-3 py-2.5 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-950">
                                   {sub.label}
-                                </button>
+                                </Link>
                              ))}
                            </div>
                         </div>
@@ -300,39 +284,33 @@ export default function Header() {
                 }
 
                 return (
-                  <li key={path} className="mx-0.5">
-                    <button
-                      onClick={() => go(path)}
-                      className={`relative px-3 py-2 rounded-full transition-all duration-300 flex items-center gap-2 ${
-                        isActive 
-                          ? 'bg-linear-to-r from-blue-100 to-blue-50 text-blue-800 font-semibold shadow-md'
-                          : 'text-slate-700 hover:text-slate-900 hover:bg-white/40'
-                      }`}
+                  <li key={path}>
+                    <Link
+                      href={path === '/' ? `/${locale}` : `/${locale}${path}`}
+                      aria-current={isActive ? 'page' : undefined}
+                      className={desktopLinkClass(isActive)}
                     >
-                      <span className="leading-none">{label}</span>
-                      {isActive && (
-                        <span className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-10 h-1 bg-linear-to-r from-blue-500 to-blue-700 rounded-full shadow-sm" />
-                      )}
-                    </button>
+                      {isActive && <span aria-hidden="true" className="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-300" />}
+                      <span>{label}</span>
+                    </Link>
                   </li>
                 );
               })}
             </ul>
-          </div>
 
-          <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
+          <div className="flex shrink-0 items-center gap-2 justify-self-end sm:gap-3">
             <div className="block">
-              {isAuthenticated ? (
+              {hasVerifiedSession ? (
                 <div ref={profileMenuRef} className="relative">
                   <button
                     type="button"
                     onClick={() => setProfileMenuOpen((open) => !open)}
-                    className="flex items-center gap-1 sm:gap-2 rounded-full border border-slate-200 bg-white px-1.5 py-1.5 sm:px-2 text-left shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"
+                    className="flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 p-1.5 text-left transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 sm:gap-2"
                     aria-haspopup="menu"
                     aria-expanded={profileMenuOpen}
                     aria-label={userName || 'User account'}
                   >
-                    <div className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full bg-linear-to-br from-slate-900 to-slate-700 text-sm font-bold text-white shadow-sm">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-900 text-sm font-bold text-white sm:h-9 sm:w-9">
                       {displayInitial}
                     </div>
                     <svg className={`mr-0.5 h-4 w-4 text-slate-400 transition-transform duration-200 ${profileMenuOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -358,32 +336,39 @@ export default function Header() {
                       <div className="border-t border-slate-100 p-3">
                         <button
                           onClick={handleLogout}
-                          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-red-200 bg-white px-3 py-2 text-sm font-semibold text-red-600 transition-all duration-300 hover:bg-red-50 hover:border-red-300"
+                          type="button"
+                          disabled={isLoggingOut}
+                          aria-busy={isLoggingOut}
+                          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-red-200 bg-white px-3 py-2 text-sm font-semibold text-red-600 transition-all duration-300 hover:border-red-300 hover:bg-red-50 disabled:cursor-wait disabled:opacity-70"
                         >
-                          <span className="text-base">↪</span>
-                          {t('logout')}
+                          {isLoggingOut ? (
+                            <span aria-hidden="true" className="h-4 w-4 animate-spin rounded-full border-2 border-red-200 border-t-red-600" />
+                          ) : (
+                            <span className="text-base">↪</span>
+                          )}
+                          {isLoggingOut ? 'Logging out...' : t('logout')}
                         </button>
                       </div>
                     </div>
                   )}
                 </div>
-              ) : (
-                <button
-                  onClick={() => go('/login')}
-                  className="bg-linear-to-r from-blue-600 to-blue-700 text-white px-4 md:px-5 py-1.5 rounded-full text-xs font-semibold hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-blue-400/50 transition-all duration-300 hover:scale-105"
+              ) : isSignedOut ? (
+                <Link
+                  href={`/${locale}/login`}
+                  className="min-h-10 rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white shadow-[0_8px_18px_rgba(15,23,42,0.2)] transition-colors hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 sm:px-5"
                 >
                   {t('login')}
-                </button>
-              )}
+                </Link>
+              ) : null}
             </div>
             
-            <div className="flex items-center gap-1 bg-linear-to-r from-slate-800 to-slate-900 rounded-full p-1 shadow-lg border-2 border-slate-600/60">
+            <div className="flex items-center gap-0.5 rounded-full border border-slate-200 bg-slate-100 p-1">
               <button
                 onClick={() => changeLocale('en')}
-                className={`px-2 md:px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-300 ${
+                className={`rounded-full px-2.5 py-1.5 text-xs font-semibold transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 sm:px-3 ${
                   locale === 'en' 
-                    ? 'bg-white text-slate-900 shadow-md' 
-                    : 'text-white hover:text-blue-100'
+                    ? 'bg-white text-slate-900 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-900'
                 }`}
                 aria-pressed={locale === 'en'}
               >
@@ -392,10 +377,10 @@ export default function Header() {
 
               <button
                 onClick={() => changeLocale('si')}
-                className={`px-2 md:px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-300 ${
+                className={`rounded-full px-2.5 py-1.5 text-xs font-semibold transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 sm:px-3 ${
                   locale === 'si' 
-                    ? 'bg-white text-slate-900 shadow-md' 
-                    : 'text-white hover:text-blue-100'
+                    ? 'bg-white text-slate-900 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-900'
                 }`}
                 aria-pressed={locale === 'si'}
               >
@@ -406,59 +391,44 @@ export default function Header() {
         </div>
 
         {/* Mobile dropdown menu */}
-        <div className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out ${mobileMenuOpen ? 'max-h-96 mt-4 opacity-100' : 'max-h-0 opacity-0'}`}>
-          <div className="flex flex-col gap-2 pt-4 border-t-2 border-slate-300/60 pb-2">
+        <div className={`overflow-hidden transition-all duration-300 ease-in-out xl:hidden ${mobileMenuOpen ? 'mt-3 max-h-[70vh] overflow-y-auto opacity-100' : 'max-h-0 opacity-0'}`}>
+          <div className="flex flex-col gap-1 border-t border-slate-200 px-1 pb-1 pt-3">
               {[
-              { path: '/login', label: t('login'), authOnly: false, hideAuth: true },
-              { path: '/', label: t('home'), authOnly: false, hideAuth: false },
-              { path: '/news', label: t('news_section_label') || 'News' },
-              { path: '/contact-us', label: t('contact_us') || 'Contact Us' },
-              { path: '/events', label: t('events') || t('events_section_label') || 'Events', isDropdown: true, subPaths: [
-                  { path: '/events#upcoming', label: t('upcoming_events') || 'Upcoming Events' },
-                  { path: '/events#past', label: t('past_events') || 'Past Events' }
-              ] },
-              { path: '/student/prefect-board', label: t('prefect_board') || 'Prefect Board', studentOnly: true },
-              { path: '/student/announcing', label: t('announcing') || 'Announcing', studentOnly: true },
-              { path: '/student/marks', label: t('marks') || 'Marks', studentOnly: true },
-            ]
-            .filter(link => {
-              if (link.studentOnly && userRole !== 'STUDENT') return false;
-              if (link.hideAuth && isAuthenticated) return false;
-              return true;
-            })
+                ...(isSignedOut ? [{ path: '/login', label: t('login') }] : []),
+                ...navigationLinks,
+              ]
             .map(({ path, label, isDropdown, subPaths }) => {
-              const basePath = path.split('#')[0];
-              const base = basePath === '/' ? `/${locale}` : `/${locale}${basePath}`;
-              const isActive = basePath === '/'
-                ? pathname === base
-                : (pathname === base || pathname?.startsWith(base + '/'));
+              const isActive = isActiveLink(path);
 
               if (isDropdown) {
                 return (
                   <div key={path} className="flex flex-col">
                     <button
+                      type="button"
                       onClick={() => setMobileEventsMenuOpen(!mobileEventsMenuOpen)}
-                      className={`px-4 py-2.5 text-xs text-left rounded-lg transition-all duration-300 font-medium flex items-center justify-between ${
-                        isActive 
-                          ? 'bg-linear-to-r from-blue-100 to-blue-50 font-bold text-blue-700 border-l-4 border-blue-600'
-                          : 'text-slate-700 hover:bg-blue-50/60 hover:text-blue-600 border-l-4 border-transparent'
-                      }`}
+                      aria-current={isActive ? 'page' : undefined}
+                      aria-expanded={mobileEventsMenuOpen}
+                      className={mobileLinkClass(isActive)}
                     >
-                      <span>{label}</span>
-                      <svg className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${mobileEventsMenuOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor">
+                      <span className="flex items-center gap-2.5">
+                        {isActive && <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-amber-300" />}
+                        {label}
+                      </span>
+                      <svg className={`h-4 w-4 transition-transform duration-200 ${isActive ? 'text-slate-300' : 'text-slate-400'} ${mobileEventsMenuOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                         <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.938a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z" clipRule="evenodd" />
                       </svg>
                     </button>
                     {mobileEventsMenuOpen && (
-                      <div className="flex flex-col gap-1 pl-4 mt-1 border-l-2 border-slate-100 ml-4">
+                      <div className="ml-4 mt-1 flex flex-col gap-1 border-l border-slate-200 py-1 pl-3">
                         {subPaths?.map((sub) => (
-                           <button
+                           <Link
                              key={sub.path}
-                             onClick={() => go(sub.path)}
-                             className="px-4 py-2 text-xs text-left rounded-lg transition-all duration-300 font-medium text-slate-600 hover:text-blue-600 hover:bg-blue-50/50"
+                             href={`/${locale}${sub.path}`}
+                             onClick={() => { setMobileEventsMenuOpen(false); setMobileMenuOpen(false); }}
+                             className="rounded-xl px-3 py-2.5 text-left text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-950"
                            >
                              {sub.label}
-                           </button>
+                           </Link>
                         ))}
                       </div>
                     )}
@@ -467,17 +437,18 @@ export default function Header() {
               }
 
               return (
-                <button
+                <Link
                   key={path}
-                  onClick={() => go(path)}
-                  className={`px-4 py-2.5 text-xs text-left rounded-lg transition-all duration-300 font-medium ${
-                    isActive 
-                      ? 'bg-linear-to-r from-blue-100 to-blue-50 font-bold text-blue-700 border-l-4 border-blue-600'
-                      : 'text-slate-700 hover:bg-blue-50/60 hover:text-blue-600 border-l-4 border-transparent'
-                  }`}
+                  href={path === '/' ? `/${locale}` : `/${locale}${path}`}
+                  onClick={() => setMobileMenuOpen(false)}
+                  aria-current={isActive ? 'page' : undefined}
+                  className={mobileLinkClass(isActive)}
                 >
-                  {label}
-                </button>
+                  <span className="flex items-center gap-2.5">
+                    {isActive && <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-amber-300" />}
+                    {label}
+                  </span>
+                </Link>
               );
             })}
             

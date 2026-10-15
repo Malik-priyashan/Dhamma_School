@@ -1,12 +1,11 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useTranslations, useLocale } from "next-intl";
-import { useRouter } from "next/navigation";
 
 export default function Hero() {
   const t = useTranslations();
-  const router = useRouter();
   const locale = useLocale();
 
   return (
@@ -22,7 +21,7 @@ export default function Hero() {
             width={240}
             height={240}
             className="h-full w-full rounded-xl object-contain drop-shadow-[0_12px_30px_rgba(0,0,0,0.35)]"
-            priority
+            loading="eager"
           />
         </div>
 
@@ -40,13 +39,13 @@ export default function Hero() {
           </p>
 
           <div className="mt-7 flex items-center justify-center pointer-events-auto">
-            <button
-              onClick={() => router.push(`/${locale}/join-us`)}
+            <Link
+              href={`/${locale}/join-us`}
               className="group inline-flex items-center justify-center rounded-full bg-amber-300 px-6 py-2.5 text-xs font-semibold text-slate-900 shadow-[0_14px_35px_rgba(251,191,36,0.35)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-amber-200 hover:shadow-[0_18px_42px_rgba(251,191,36,0.45)] sm:px-7 sm:py-3 sm:text-sm"
             >
               {t('cta')}
               <span className="ml-2 transition-transform duration-200 group-hover:translate-x-0.5">→</span>
-            </button>
+            </Link>
           </div>
         </div>
 

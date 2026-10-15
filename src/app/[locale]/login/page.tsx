@@ -65,9 +65,7 @@ export default function LoginPage() {
       const redirectPath = getPostLoginPath(res?.user?.role || res?.user?.Role || res?.role || res?.Role);
       
       setSuccess(true);
-      setTimeout(() => {
-        router.replace(redirectPath);
-      }, 1000);
+      router.replace(redirectPath);
     } catch (err: any) {
       setError(err.message || "Login failed. Please check your credentials.");
     } finally {
