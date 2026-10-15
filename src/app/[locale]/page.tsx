@@ -11,7 +11,7 @@ import { getUserRole } from "../../lib/authUtils";
 
 const HomeHighlightsSection = dynamic(() => import("../features/home/HomeHighlightsSection"), {
   ssr: false,
-  loading: () => <div className="min-h-[70vh] rounded-4xl bg-slate-50" aria-hidden="true" />,
+  loading: () => <div className="min-h-[23rem] rounded-4xl bg-slate-50 sm:min-h-[30rem] xl:min-h-[70vh]" aria-hidden="true" />,
 });
 const YouTubeVideos = dynamic(() => import("../features/home/YouTubeVideos"), {
   ssr: false,
@@ -54,7 +54,7 @@ export default function LocalePage() {
                   <EventsSection />
                 </div>
                 <div className="mt-8">
-                  <DeferredHomeSection placeholderClassName="min-h-[70vh] rounded-4xl bg-slate-50">
+                  <DeferredHomeSection placeholderClassName="min-h-[23rem] rounded-4xl bg-slate-50 sm:min-h-[30rem] xl:min-h-[70vh]">
                     <HomeHighlightsSection />
                   </DeferredHomeSection>
                 </div>

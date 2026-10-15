@@ -27,23 +27,25 @@ export default function StudentMarksPage() {
   const [availableYears, setAvailableYears] = useState<string[]>([]);
   const [year, setYear] = useState<string>("");
   const [marks, setMarks] = useState<MarkRow | null>(null);
-  const [loading, setLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   // Load current user and students on mount
   useEffect(() => {
+    let active = true;
+
     async function loadData() {
       try {
-        setLoading(true);
-        setError(null);
         const user = await fetchCurrentUser();
+        if (!active) return;
         if (user) {
           const myStudents = await fetchMyStudents();
+          if (!active) return;
           setStudents(myStudents);
 
           if (myStudents.length > 0) {
             setSelectedStudent(myStudents[0]);
-            setStudentId(myStudents[0].id || null);
+            setStudentId(myStudents[0].id ? String(myStudents[0].id) : null);
             setStudentName(myStudents[0].fullNameWithSurname || myStudents[0].nameWithInitials || user.fullName || "Student");
           } else {
             // Fallback if no student profile is created/accepted yet
@@ -52,24 +54,26 @@ export default function StudentMarksPage() {
           }
         } else {
           setError(t('user_not_found') ?? 'User not found');
+          setLoading(false);
         }
       } catch (e) {
+        if (!active) return;
         console.error(e);
         setError(t('failed_to_load_user') ?? 'Failed to load user');
-      } finally {
         setLoading(false);
       }
     }
-    loadData();
-  }, []);
+    void loadData();
+    return () => { active = false; };
+  }, [t]);
 
   // Fetch marks whenever studentId changes
   useEffect(() => {
     if (!studentId) return;
-    setLoading(true);
-    setError(null);
+    let active = true;
     fetchMarksByStudent(studentId)
       .then((data) => {
+        if (!active) return;
         const mapped: MarkRow[] = data.map((item) => ({
           academicYear: item.academicYear,
           firstTerm: item.firstTerm,
@@ -96,21 +100,31 @@ export default function StudentMarksPage() {
           setYear("");
           setMarks(null);
         }
-        setLoading(false);
       })
       .catch((e) => {
+        if (!active) return;
         console.error(e);
         setError(t('failed_to_load_marks') ?? 'Failed to load marks');
-        setLoading(false);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
       });
-  }, [studentId]);
+    return () => { active = false; };
+  }, [studentId, t]);
 
   const handleStudentChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const sId = e.target.value;
-    const found = students.find((s) => s.id === sId);
+    if (sId === studentId) return;
+    const found = students.find((s) => String(s.id) === sId);
     if (found) {
+      setLoading(true);
+      setError(null);
+      setMarks(null);
+      setAllMarks([]);
+      setAvailableYears([]);
+      setYear("");
       setSelectedStudent(found);
-      setStudentId(found.id || null);
+      setStudentId(String(found.id));
       setStudentName(found.fullNameWithSurname || found.nameWithInitials || "Student");
     }
   };
@@ -147,6 +161,7 @@ export default function StudentMarksPage() {
   };
 
   const calculatedGrade = getCalculatedGradeForYear();
+  const hasRecordedMarks = Boolean(marks && [marks.firstTerm, marks.secondTerm, marks.thirdTerm].some((score) => score !== undefined && score !== null));
 
   // Calculate average score dynamically
   const getAverage = () => {
@@ -433,98 +448,115 @@ export default function StudentMarksPage() {
       <div className="max-w-4xl mx-auto space-y-8 animate-fade-in">
         
         {/* Top Header Card */}
-        <div className={`${marks ? 'bg-white rounded-2xl p-6 shadow-sm border border-neutral-200' : 'bg-transparent rounded-2xl p-6'} flex flex-col md:flex-row md:items-center justify-between gap-6`}>
-          <div className="space-y-2">
-            <div className="flex flex-wrap items-center gap-2.5">
-              {marks && (
-                <>
-                  <div className="w-2 h-6 bg-black rounded-full" />
-                  <h1 className="text-xl font-bold text-neutral-950 tracking-tight">
-                    {locale === 'si' ? `${studentName} ගේ ලකුණු` : `${studentName}'s Marks`}
-                  </h1>
-                </>
-              )}
-              {selectedStudent?.grade && (
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
-                  {locale === 'si' ? `වත්මන් ශ්‍රේණිය: ${selectedStudent.grade}` : `Current: ${selectedStudent.grade}`}
-                </span>
+        <div className={`relative overflow-hidden rounded-3xl ${hasRecordedMarks ? 'border border-slate-200 bg-white p-5 shadow-[0_16px_40px_rgba(15,23,42,0.06)] sm:p-7' : 'px-1 py-2 sm:px-2'}`}>
+          {hasRecordedMarks && (
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-sky-50/80 to-transparent" />
+          )}
+          <div className={`relative ${hasRecordedMarks ? 'grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start' : 'flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between'}`}>
+            <div className="min-w-0">
+              {hasRecordedMarks && marks ? (
+                <div className="flex flex-wrap items-center gap-3">
+                    <div aria-hidden="true" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-900 text-lg font-bold text-white shadow-sm">
+                      {studentName.trim().charAt(0).toUpperCase() || 'S'}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-sky-700">
+                        {locale === 'si' ? 'ලකුණු වාර්තාව' : 'Marks report'}
+                      </p>
+                      <h1 className="mt-0.5 break-words text-xl font-extrabold tracking-tight text-slate-950 sm:text-2xl">
+                        {studentName}
+                      </h1>
+                    </div>
+                </div>
+              ) : (
+                <h1 className="text-2xl font-extrabold tracking-tight text-neutral-950">{t('marks')}</h1>
               )}
             </div>
-            {marks && (
-              <p className="text-xs text-slate-400 font-medium flex flex-wrap items-center gap-x-2 gap-y-1">
-                <span className="bg-slate-100 px-2 py-0.5 rounded text-slate-600">
-                  {locale === 'si' ? `අධ්‍යයන වර්ෂය: ${marks.academicYear}` : `Academic Year: ${marks.academicYear}`}
-                </span>
-                {calculatedGrade && (
-                  <>
-                    <span className="text-slate-300">•</span>
-                    <span className="bg-slate-100 px-2 py-0.5 rounded text-slate-600">{calculatedGrade}</span>
-                  </>
-                )}
-                {marks.teacherName && (
-                  <>
-                    <span className="text-slate-300">•</span>
-                    <span className="text-slate-500">
-                      {locale === 'si' ? 'ගුරුතුමා' : 'Teacher'}: <strong className="text-slate-700 font-semibold">{marks.teacherName}</strong>
-                    </span>
-                  </>
-                )}
-              </p>
-            )}
-          </div>
 
-          {/* Dropdown Selectors */}
-          <div className="flex items-center gap-3">
-            {students.length > 1 && (
-              <div className="flex flex-col gap-1">
-                <label htmlFor="studentSelect" className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                  {locale === 'si' ? 'සිසුවා' : 'Student'}
-                </label>
-                <select
-                  id="studentSelect"
-                  value={studentId || ""}
-                  onChange={handleStudentChange}
-                className="bg-white border border-neutral-300 text-neutral-900 font-bold rounded-lg text-xs py-2 px-3 outline-none cursor-pointer transition-all focus:border-black focus:ring-2 focus:ring-black/10"
-                >
-                  {students.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.fullNameWithSurname || s.nameWithInitials}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {availableYears.length > 0 && (
-              <div className="flex flex-col gap-1">
-                <label htmlFor="yearSelect" className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                  {locale === 'si' ? 'වර්ෂය' : 'Year'}
-                </label>
-                <select
-                  id="yearSelect"
-                  value={year}
-                  onChange={handleYearChange}
-                className="bg-white border border-neutral-300 text-neutral-900 font-bold rounded-lg text-xs py-2 px-3 outline-none cursor-pointer transition-all focus:border-black focus:ring-2 focus:ring-black/10"
-                >
-                  {availableYears.map((y) => (
-                    <option key={y} value={y}>{y}</option>
-                  ))}
-                </select>
+            {/* Dropdown Selectors */}
+            {(students.length > 0 || availableYears.length > 0) && (
+              <div className={`grid min-w-0 gap-3 ${availableYears.length > 0 && students.length > 0 ? 'sm:grid-cols-[minmax(0,1fr)_7rem]' : 'sm:grid-cols-1'}`}>
+                {students.length > 0 && (
+                  <div className="min-w-0">
+                    <label htmlFor="studentSelect" className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
+                      {hasRecordedMarks ? (locale === 'si' ? 'සිසුවා' : 'Student') : (locale === 'si' ? 'සිසුවා තෝරන්න' : 'Choose student')}
+                    </label>
+                    <select id="studentSelect" value={studentId || ""} onChange={handleStudentChange}
+                      className="w-full min-w-0 cursor-pointer rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm font-semibold text-slate-900 shadow-sm outline-none transition hover:border-slate-300 hover:bg-white focus:border-sky-500 focus:bg-white focus:ring-4 focus:ring-sky-100">
+                      {students.map((student) => (
+                        <option key={student.id} value={student.id}>
+                          {student.fullNameWithSurname || student.nameWithInitials}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                {availableYears.length > 0 && (
+                  <div className="min-w-0">
+                    <label htmlFor="yearSelect" className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
+                      {locale === 'si' ? 'වර්ෂය' : 'Year'}
+                    </label>
+                    <select id="yearSelect" value={year} onChange={handleYearChange}
+                      className="w-full min-w-0 cursor-pointer rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm font-semibold text-slate-900 shadow-sm outline-none transition hover:border-slate-300 hover:bg-white focus:border-sky-500 focus:bg-white focus:ring-4 focus:ring-sky-100">
+                      {availableYears.map((availableYear) => (
+                        <option key={availableYear} value={availableYear}>{availableYear}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
             )}
           </div>
+          {hasRecordedMarks && marks && (
+            <dl tabIndex={0} className="relative mt-6 flex snap-x snap-mandatory gap-2.5 overflow-x-auto pb-2 [scrollbar-width:thin] sm:grid sm:grid-cols-4 sm:overflow-visible sm:pb-0">
+              <div className="min-w-36 flex-1 snap-start rounded-2xl border border-sky-200 bg-sky-50/80 px-3.5 py-3 sm:min-w-0">
+                <dt className="text-[10px] font-bold uppercase tracking-wider text-sky-700">{locale === 'si' ? 'වත්මන් ශ්‍රේණිය' : 'Current grade'}</dt>
+                <dd className="mt-1 text-base font-extrabold text-slate-900">{selectedStudent?.grade || '—'}</dd>
+              </div>
+              <div className="min-w-36 flex-1 snap-start rounded-2xl border border-slate-200/80 bg-white/90 px-3.5 py-3 sm:min-w-0">
+                <dt className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{locale === 'si' ? 'එම වර්ෂයේ ශ්‍රේණිය' : 'Grade that year'}</dt>
+                <dd className="mt-1 text-base font-extrabold text-slate-900">{calculatedGrade || '—'}</dd>
+              </div>
+              <div className="min-w-36 flex-1 snap-start rounded-2xl border border-slate-200/80 bg-white/90 px-3.5 py-3 sm:min-w-0">
+                <dt className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{locale === 'si' ? 'අධ්‍යයන වර්ෂය' : 'Academic year'}</dt>
+                <dd className="mt-1 text-base font-extrabold text-slate-900">{marks.academicYear}</dd>
+              </div>
+              <div className="min-w-36 flex-1 snap-start rounded-2xl border border-slate-200/80 bg-white/90 px-3.5 py-3 sm:min-w-0">
+                <dt className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{locale === 'si' ? 'ගුරුතුමා' : 'Teacher'}</dt>
+                <dd className="mt-1 break-words text-sm font-bold text-slate-900">{marks.teacherName || (locale === 'si' ? 'සඳහන් කර නැත' : 'Not listed')}</dd>
+              </div>
+            </dl>
+          )}
         </div>
 
         {/* Content Area */}
         {loading ? (
-          <div className="flex flex-col items-center justify-center min-h-[300px] bg-white rounded-2xl border border-neutral-200 shadow-sm">
-            <div className="w-10 h-10 rounded-full border-4 border-neutral-200 border-t-black animate-spin" />
+          <div role="status" aria-live="polite" className="relative min-h-[300px] overflow-hidden rounded-3xl border border-slate-200 bg-white px-6 py-10 shadow-sm sm:px-10">
+            <div className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-sky-100/60 blur-3xl" />
+            <div className="relative flex flex-col items-center gap-4 text-center sm:flex-row sm:text-left">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-sky-50 ring-1 ring-sky-100">
+                <div className="h-7 w-7 animate-spin rounded-full border-[3px] border-sky-200 border-t-sky-700 motion-reduce:animate-none" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-slate-900">{locale === 'si' ? 'ලකුණු පූරණය වෙමින්' : 'Loading marks'}</h2>
+                <p className="mt-1 text-sm text-slate-500">{locale === 'si' ? 'ලකුණු වාර්තා පරීක්ෂා කරමින් සිටී.' : 'Checking the available results for this student.'}</p>
+              </div>
+            </div>
+            <div aria-hidden="true" className="relative mt-8 grid gap-3 sm:grid-cols-3">
+              {[0, 1, 2].map((index) => (
+                <div key={index} className="rounded-2xl border border-slate-100 bg-slate-50/70 p-5">
+                  <div className="h-3 w-20 animate-pulse rounded-full bg-slate-200 motion-reduce:animate-none" />
+                  <div className="mt-6 h-8 w-16 animate-pulse rounded-lg bg-slate-200 motion-reduce:animate-none" />
+                  <div className="mt-6 h-2 w-full animate-pulse rounded-full bg-slate-200 motion-reduce:animate-none" />
+                </div>
+              ))}
+            </div>
           </div>
         ) : error ? (
           <div className="bg-red-50 border border-red-200 rounded-2xl p-6 text-sm font-semibold text-red-700 shadow-sm">
             {error}
           </div>
-        ) : marks ? (
+        ) : hasRecordedMarks && marks ? (
           <div className="space-y-8">
             
             {/* Term Grid Layout */}
@@ -644,21 +676,23 @@ export default function StudentMarksPage() {
 
           </div>
         ) : (
-          /* Clean Empty State */
-          <div className="max-w-md mx-auto text-center py-12 space-y-4">
-            <div className="w-20 h-20 bg-gradient-to-br from-white to-slate-50 rounded-2xl flex items-center justify-center mx-auto text-blue-600 shadow-lg">
-              <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-            </div>
-            <div>
-              <h3 className="text-lg font-extrabold text-slate-900 mb-1">
-                {locale === 'si' ? 'ලකුණු සොයාගත නොහැක' : 'No Marks Found'}
-              </h3>
-              <p className="text-slate-500 text-sm leading-relaxed">
-                {locale === 'si' 
-                  ? `${year || ''} වසර සඳහා තවමත් කිසිදු ලකුණක් සටහන් කර නොමැත.` 
-                  : `No marks have been recorded for ${year || ''} yet.`
-                }
+          <div className="relative overflow-hidden rounded-3xl border border-slate-200 bg-white px-6 py-12 text-center shadow-sm sm:py-16">
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-36 bg-gradient-to-b from-sky-50 to-transparent" />
+            <div className="relative mx-auto max-w-md">
+              <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-white text-sky-700 shadow-[0_12px_32px_rgba(14,165,233,0.12)] ring-1 ring-sky-100">
+                <svg className="h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+              </div>
+              <h2 className="mt-6 text-xl font-extrabold tracking-tight text-slate-900">{t('no_marks_available')}</h2>
+              <p className="mt-2 text-sm leading-6 text-slate-500">
+                {year
+                  ? (locale === 'si' ? `${year} වසර සඳහා තවමත් කිසිදු ලකුණක් සටහන් කර නොමැත.` : `No marks have been recorded for ${year} yet.`)
+                  : t('no_marks_desc')}
               </p>
+              {students.length > 1 && (
+                <p className="mt-4 text-xs font-medium text-slate-400">
+                  {locale === 'si' ? 'වෙනත් සිසුවෙකුගේ ප්‍රතිඵල බැලීමට ඉහළින් තෝරන්න.' : 'Choose another student above to check their results.'}
+                </p>
+              )}
             </div>
           </div>
         )}

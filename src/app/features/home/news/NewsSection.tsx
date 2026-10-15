@@ -37,8 +37,27 @@ const SINHALA_MONTH_NAMES = [
   "දෙසැම්බර්",
 ];
 
+const carouselCardWidth = "w-full flex-none sm:w-[calc((100%_-_0.75rem)/2)] lg:w-[calc((100%_-_1.5rem)/3)]";
 
-function LoadingCard({ mode }: { mode: "preview" | "full" }) {
+function LoadingCard({ mode }: { mode: "preview" | "full" | "carousel" }) {
+  if (mode === "carousel") {
+    return (
+      <article aria-hidden="true" className={`${carouselCardWidth} flex animate-pulse flex-col overflow-hidden rounded-[1.55rem] bg-white shadow-[0_14px_28px_rgba(37,99,235,0.10)] ring-1 ring-black/5`}>
+        <div className="flex items-start gap-2 px-4 pt-3.5">
+          <div className="h-8 w-8 shrink-0 rounded-full bg-slate-200" />
+          <div className="mt-1 h-5 w-3/4 rounded-full bg-slate-200" />
+        </div>
+        <div className="mt-2.5 h-52 w-full bg-slate-100 sm:h-56" />
+        <div className="space-y-2 px-4 pb-12 pt-2.5">
+          <div className="h-3 w-24 rounded-full bg-slate-200" />
+          <div className="h-3 w-full rounded-full bg-slate-200" />
+          <div className="h-3 w-5/6 rounded-full bg-slate-200" />
+          <div className="h-3 w-2/3 rounded-full bg-slate-200" />
+        </div>
+      </article>
+    );
+  }
+
   if (mode === "preview") {
     return (
       <article className="flex min-h-52 gap-4 rounded-3xl bg-white p-3.5 shadow-sm">
@@ -154,6 +173,7 @@ export default function NewsSection({ mode = "preview" }: NewsSectionProps) {
   const [items, setItems] = useState<HomeContentItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
   const [expandedIds, setExpandedIds] = useState<string[]>([]);
   const [selectedItem, setSelectedItem] = useState<HomeContentItem | null>(null);
   const isCarouselMode = mode === "full";
@@ -221,13 +241,14 @@ export default function NewsSection({ mode = "preview" }: NewsSectionProps) {
       setError(null);
 
       try {
-        const payload = await fetchHomeNews();
+        const payload = await fetchHomeNews({ all: mode === "full", signal: controller.signal });
+        if (controller.signal.aborted) return;
         const nextItems = normalizeContent(payload)
           .sort((left, right) => right.dateMs - left.dateMs)
           .slice(0, mode === "preview" ? 3 : undefined);
         setItems(nextItems.length ? nextItems : []);
       } catch (fetchError) {
-        if ((fetchError as Error).name === "AbortError") return;
+        if (controller.signal.aborted || (fetchError as Error).name === "AbortError") return;
         setError(t("news_section_error"));
         setItems([]);
       } finally {
@@ -240,7 +261,7 @@ export default function NewsSection({ mode = "preview" }: NewsSectionProps) {
     void loadNews();
 
     return () => controller.abort();
-  }, [locale, mode, t]);
+  }, [locale, mode, reloadKey, t]);
 
   const visibleItems = mode === "preview" ? items.slice(0, 3) : items;
 
@@ -326,7 +347,14 @@ export default function NewsSection({ mode = "preview" }: NewsSectionProps) {
             </div>
           </div>
 
-          {error && <div className="mt-3 rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-black/70">{error}</div>}
+          {error && (
+            <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-black/70">
+              <span>{error}</span>
+              <button type="button" onClick={() => setReloadKey((key) => key + 1)} className="shrink-0 font-semibold text-blue-600 hover:underline">
+                {t("news_section_retry")}
+              </button>
+            </div>
+          )}
 
           {loading && (
             <div className="mt-5 flex items-center gap-4 overflow-visible">
@@ -336,12 +364,7 @@ export default function NewsSection({ mode = "preview" }: NewsSectionProps) {
 
               <div className="flex min-w-0 flex-1 gap-3 overflow-hidden pb-3 pt-1">
                 {Array.from({ length: 3 }).map((_, index) => (
-                  <div
-                    key={`news-preview-loading-${index}`}
-                    className="snap-start flex w-full min-w-full max-w-full shrink-0 sm:w-[calc((100%-1.5rem)/2)] sm:min-w-[calc((100%-1.5rem)/2)] sm:max-w-[calc((100%-1.5rem)/2)] lg:w-[calc((100%-1.5rem)/3)] lg:min-w-[calc((100%-1.5rem)/3)] lg:max-w-[calc((100%-1.5rem)/3)]"
-                  >
-                    <LoadingCard mode="preview" />
-                  </div>
+                  <LoadingCard key={`news-carousel-loading-${index}`} mode="carousel" />
                 ))}
               </div>
 
@@ -351,7 +374,11 @@ export default function NewsSection({ mode = "preview" }: NewsSectionProps) {
             </div>
           )}
 
-          {!loading && (
+          {!loading && !error && visibleItems.length === 0 && (
+            <p className="mt-5 rounded-2xl bg-white px-4 py-6 text-center text-sm text-slate-600">{t("news_section_empty")}</p>
+          )}
+
+          {!loading && visibleItems.length > 0 && (
             <div className="mt-5 flex items-center gap-4 overflow-visible">
             {visibleItems.length > 1 && (
               <button
@@ -388,7 +415,7 @@ export default function NewsSection({ mode = "preview" }: NewsSectionProps) {
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") setSelectedItem(item);
                   }}
-                  className="relative cursor-pointer snap-start flex w-full min-w-full max-w-full shrink-0 flex-col overflow-hidden rounded-[1.55rem] bg-white shadow-[0_14px_28px_rgba(37,99,235,0.10)] ring-1 ring-black/5 sm:w-[calc((100%-1.5rem)/2)] sm:min-w-[calc((100%-1.5rem)/2)] sm:max-w-[calc((100%-1.5rem)/2)] lg:w-[calc((100%-1.5rem)/3)] lg:min-w-[calc((100%-1.5rem)/3)] lg:max-w-[calc((100%-1.5rem)/3)]"
+                  className={`${carouselCardWidth} relative cursor-pointer snap-start flex flex-col overflow-hidden rounded-[1.55rem] bg-white shadow-[0_14px_28px_rgba(37,99,235,0.10)] ring-1 ring-black/5`}
                 >
                   <div className="flex items-start gap-2 px-4 pt-3.5">
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-900 text-xs font-semibold text-white shadow-sm">
