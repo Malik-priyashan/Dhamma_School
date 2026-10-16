@@ -4,6 +4,32 @@ const ADMIN_CONTACT_THREAD_READ_STORAGE_KEY_PREFIX = 'dhamma_school_admin_contac
 
 export type AuthPayload = Record<string, unknown>;
 
+async function readAuthResult(res: Response) {
+  const text = await res.text();
+  let result: unknown = text;
+  try { result = JSON.parse(text); } catch {}
+  if (!res.ok) {
+    const error = result && typeof result === 'object' ? result as { message?: string | string[] } : null;
+    const message = Array.isArray(error?.message) ? error.message.join(', ') : error?.message;
+    throw new Error(message || `Request failed ${res.status}`);
+  }
+  return result;
+}
+
+export async function sendRegistrationCode(email: string) {
+  return readAuthResult(await fetchAuthResponse('registration-email/send', {
+    method: 'POST', credentials: 'include', cache: 'no-store',
+    headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }),
+  }));
+}
+
+export async function verifyRegistrationCode(email: string, code: string): Promise<{ verificationToken: string }> {
+  return readAuthResult(await fetchAuthResponse('registration-email/verify', {
+    method: 'POST', credentials: 'include', cache: 'no-store',
+    headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, code }),
+  })) as Promise<{ verificationToken: string }>;
+}
+
 let refreshInFlight: Promise<boolean> | null = null;
 let currentUserInFlight: ReturnType<typeof requestCurrentUser> | null = null;
 
@@ -60,22 +86,7 @@ export async function registerUser(payload: AuthPayload) {
       body: JSON.stringify(payload),
     });
 
-    const text = await res.text();
-
-    if (!res.ok) {
-      throw new Error(`Request failed ${res.status}: ${text}`);
-    }
-
-    const contentType = res.headers.get('content-type') || '';
-    if (contentType.includes('application/json')) {
-      try {
-        return JSON.parse(text);
-      } catch {
-        return text;
-      }
-    }
-
-    return { result: text };
+    return await readAuthResult(res);
   } catch (err) {
     console.error('registerUser error', err);
     throw err;
