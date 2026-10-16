@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 
-const DEFAULT_PRODUCTION_BACKEND_URL = 'https://dhamma-backend.vercel.app';
+const DEFAULT_PRODUCTION_BACKEND_URL = 'https://dhamma-school-be.vercel.app';
 
 function isLocalBackendUrl(value: string) {
   try {
