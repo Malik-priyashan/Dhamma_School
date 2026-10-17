@@ -1,133 +1,61 @@
 import { NextResponse } from 'next/server';
 
+const FALLBACK_CHANNEL_ID = 'UCV7toQqmX3zL8pdBeV0Oxcg';
+const FALLBACK_VIDEOS = [
+  { id: 'I0vUq-5spfc', title: 'සිසු නයනුවන් අභිසෙස් 2026 ස්තුති කතාව' },
+  { id: 'UfuT9y_j6_k', title: 'සිසු නයනුවන් අභිසෙස් 2026' },
+  { id: 'BPQfd2vn2F4', title: 'සිසු නයනුවන් අභිසෙස් 2026 කනිෂ්ඨ ශිෂ්‍ය නායක නායිකා මණ්ඩලය දිවුරුම් දීම' },
+  { id: 'wRowrFo_HH8', title: 'සිසු නයනුවන් අභිසෙස් 2026 ජ්‍යෙෂ්ඨ ශිෂ්‍ය නායක නායිකා මණ්ඩලය දිවුරුම් දීම' },
+  { id: 'qsz_fNNdKSY', title: 'සිසු නයනුවන් අභිසෙස් 2026 බද්දේගම කුසල හාමුදුරුවන්ගේ මූලාසනයේ අනුශාසනාව' },
+  { id: 'ztv2cCs1OWo', title: 'සිසු නයනුවන් අභිසෙස් 2026 ප්‍රධාන උපප්‍රධාන ශිෂ්‍ය නායක නායිකා මණ්ඩලය දිවුරුම් දීම' },
+  { id: 'kc7_t7vuIm4', title: 'සිසු නයනුවන් අභිසෙස් 2026  දේවාලයගම සුමනරතන හිමියන්ගේ පැවිදි අනුශාසනාව' },
+  { id: 'eHvvw1phTJQ', title: 'සිසු නයනුවන් අභිසෙස් 2026' },
+];
+
 async function resolveChannelId(identifier: string) {
-  if (!identifier) return null;
-
-  // Trim and normalize
   const id = identifier.trim();
-
-  // If it already looks like a channel id (UC...), return as-is
   if (/^UC[0-9A-Za-z_-]{20,}$/.test(id)) return id;
 
-  // Try several strategies by fetching the public channel/handle page
-  const path = id.startsWith('@') ? id : id;
-  const url = `https://www.youtube.com/${path}`;
   try {
-    // Use a browser-like user-agent to increase chance of full HTML being returned
-    const res = await fetch(url, {
+    const res = await fetch(`https://www.youtube.com/${id}`, {
       headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)' },
       next: { revalidate: 300 },
     });
     if (!res.ok) return null;
-    const txt = await res.text();
-
-    // 1) Look for explicit channelId JSON pattern
-    const m1 = txt.match(/"channelId"\s*:\s*"(UC[0-9A-Za-z_-]+)"/);
-    if (m1) return m1[1];
-
-    // 2) Look for canonical link to /channel/UC...
-    const m2 = txt.match(/<link[^>]+rel="canonical"[^>]+href="https?:\/\/www\.youtube\.com\/channel\/(UC[0-9A-Za-z_-]+)"/i);
-    if (m2) return m2[1];
-
-    // 3) Look for any /channel/UC... occurrence
-    const m3 = txt.match(/\/channel\/(UC[0-9A-Za-z_-]{20,})/i);
-    if (m3) return m3[1];
-
-    // 4) As a fallback, try to find microdata attribute data-channel-external-id or similar
-    const m4 = txt.match(/data-channel-external-id="(UC[0-9A-Za-z_-]+)"/i);
-    if (m4) return m4[1];
+    const html = await res.text();
+    return html.match(/"channelId"\s*:\s*"(UC[0-9A-Za-z_-]+)"/)?.[1]
+      || html.match(/<link[^>]+rel="canonical"[^>]+href="https?:\/\/www\.youtube\.com\/channel\/(UC[0-9A-Za-z_-]+)"/i)?.[1]
+      || html.match(/\/channel\/(UC[0-9A-Za-z_-]{20,})/i)?.[1]
+      || html.match(/data-channel-external-id="(UC[0-9A-Za-z_-]+)"/i)?.[1]
+      || null;
   } catch {
-    // ignore
+    return null;
   }
-
-  // If all strategies failed, return null
-  return null;
 }
 
 async function fetchRssVideos(channelId: string) {
-  // First try the simple RSS feed
-  const feedUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
-  try {
-    const res = await fetch(feedUrl, {
-      headers: { 'User-Agent': 'Mozilla/5.0' },
-      next: { revalidate: 300 },
-    });
-    if (res.ok) {
+  const url = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
+
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const res = await fetch(url, {
+        headers: { 'User-Agent': 'Mozilla/5.0' },
+        ...(attempt === 0 ? { next: { revalidate: 300 } } : { cache: 'no-store' as const }),
+      });
+      if (!res.ok) continue;
+
       const xml = await res.text();
-      const entries = Array.from(xml.matchAll(/<entry>[\s\S]*?<\/entry>/g)).map((m) => m[0]);
-      const videos = entries.map((entry) => {
-        const idMatch = entry.match(/<yt:videoId>([^<]+)<\/yt:videoId>/);
-        const titleMatch = entry.match(/<title>([^<]+)<\/title>/);
-        return {
-          id: idMatch ? idMatch[1] : null,
-          title: titleMatch ? titleMatch[1] : null,
-        };
-      }).filter(v => v.id);
+      const videos = Array.from(xml.matchAll(/<entry>[\s\S]*?<\/entry>/g), ([entry]) => ({
+        id: entry.match(/<yt:videoId>([^<]+)<\/yt:videoId>/)?.[1] || '',
+        title: entry.match(/<title>([^<]+)<\/title>/)?.[1] || '',
+      })).filter((video) => video.id);
       if (videos.length) return videos;
-    }
-  } catch {
-    // fall through to HTML parsing
-  }
-
-  // Fallback: fetch the channel's /videos page and parse ytInitialData JSON
-  const videosPage = `https://www.youtube.com/channel/${channelId}/videos`;
-  const res2 = await fetch(videosPage, {
-    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
-    next: { revalidate: 300 },
-  });
-  if (!res2.ok) throw new Error('Failed to fetch channel videos page');
-  const txt = await res2.text();
-
-  const idx = txt.indexOf('ytInitialData');
-  if (idx === -1) throw new Error('ytInitialData not found');
-
-  // Find the JSON object starting at the first '{' after ytInitialData
-  const braceStart = txt.indexOf('{', idx);
-  if (braceStart === -1) throw new Error('Initial data JSON not found');
-
-  let i = braceStart;
-  let depth = 0;
-  let inString = false;
-  let prevChar = '';
-  for (; i < txt.length; i++) {
-    const ch = txt[i];
-    if (ch === '"' && prevChar !== '\\') inString = !inString;
-    if (!inString) {
-      if (ch === '{') depth++;
-      else if (ch === '}') {
-        depth--;
-        if (depth === 0) break;
-      }
-    }
-    prevChar = ch;
-  }
-  if (depth !== 0) throw new Error('Failed to parse initial JSON');
-  const jsonStr = txt.slice(braceStart, i + 1);
-  let data: any;
-  try {
-    data = JSON.parse(jsonStr);
-  } catch {
-    throw new Error('Failed to JSON.parse ytInitialData');
-  }
-
-  // Recursively walk the object to find videoRenderer entries
-  const found: Array<{ id: string; title: string }> = [];
-  function walk(obj: any) {
-    if (!obj || typeof obj !== 'object') return;
-    if (obj.videoRenderer && obj.videoRenderer.videoId) {
-      const vr = obj.videoRenderer;
-      const title = vr.title?.runs?.[0]?.text || vr.title || '';
-      found.push({ id: vr.videoId, title });
-      return;
-    }
-    for (const k of Object.keys(obj)) {
-      try { walk(obj[k]); } catch { /* ignore */ }
+    } catch {
+      // Retry without the fetch cache if YouTube temporarily fails.
     }
   }
-  walk(data);
 
-  if (!found.length) throw new Error('No videos found in initial data');
-  return found;
+  throw new Error('YouTube RSS feed unavailable');
 }
 
 export async function GET() {
@@ -142,8 +70,13 @@ export async function GET() {
     return NextResponse.json({ videos }, {
       headers: { 'Cache-Control': 'public, max-age=300, s-maxage=300, stale-while-revalidate=600' },
     });
-  } catch (err) {
-    console.error('[youtube] fetchRssVideos error:', err);
-    return NextResponse.json({ error: (err as Error).message || 'Failed to fetch videos' }, { status: 500 });
+  } catch (error) {
+    console.error('[youtube] RSS feed unavailable:', error);
+    if (channelId === FALLBACK_CHANNEL_ID) {
+      return NextResponse.json({ videos: FALLBACK_VIDEOS }, {
+        headers: { 'Cache-Control': 'public, max-age=60, s-maxage=60' },
+      });
+    }
+    return NextResponse.json({ error: 'Failed to fetch videos' }, { status: 502 });
   }
 }
