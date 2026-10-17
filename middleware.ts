@@ -10,11 +10,6 @@ const intlMiddleware = createMiddleware({
 export default function middleware(req: NextRequest) {
   const token = req.cookies.get("accessToken")?.value || req.cookies.get("auth_token")?.value;
   const hasSession = Boolean(token || req.cookies.get("refreshToken")?.value);
-  console.log("[middleware] token check", {
-    hasAccessToken: Boolean(req.cookies.get("accessToken")?.value),
-    hasAuthToken: Boolean(req.cookies.get("auth_token")?.value),
-    isAuthenticated: hasSession,
-  });
   const { pathname } = req.nextUrl;
   
   const isAuthPage = pathname.includes("/login") || pathname.includes("/register");

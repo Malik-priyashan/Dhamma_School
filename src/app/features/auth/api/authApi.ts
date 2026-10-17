@@ -1,6 +1,11 @@
 const AUTH_PROXY_BASE = '/api/proxy/auth';
 const AUTH_COOKIE_NAMES = ['accessToken', 'auth_token', 'refreshToken', 'userRole', 'loginAt'] as const;
 const ADMIN_CONTACT_THREAD_READ_STORAGE_KEY_PREFIX = 'dhamma_school_admin_contact_thread_read_v1';
+const TOKEN_ISSUED_AT_KEY = 'dhamma_school_token_issued_at';
+const RENEW_AFTER_MS = 10 * 60 * 1000;
+let lastTokenIssuedAt = 0;
+let lastTokenMarker = '';
+let isLoggingOut = false;
 
 export type AuthPayload = Record<string, unknown>;
 
@@ -33,6 +38,28 @@ export async function verifyRegistrationCode(email: string, code: string): Promi
 let refreshInFlight: Promise<boolean> | null = null;
 let currentUserInFlight: ReturnType<typeof requestCurrentUser> | null = null;
 
+function readTokenMarker() {
+  try {
+    return localStorage.getItem(TOKEN_ISSUED_AT_KEY) || lastTokenMarker;
+  } catch {
+    return lastTokenMarker;
+  }
+}
+
+function recordTokenIssued() {
+  lastTokenIssuedAt = Date.now();
+  lastTokenMarker = `${lastTokenIssuedAt}:${Math.random()}`;
+  try {
+    localStorage.setItem(TOKEN_ISSUED_AT_KEY, lastTokenMarker);
+  } catch {}
+}
+
+export function sessionNeedsRenewal() {
+  const marker = readTokenMarker();
+  const issuedAt = marker ? Number(marker.split(':')[0]) : lastTokenIssuedAt;
+  return !issuedAt || Date.now() - issuedAt >= RENEW_AFTER_MS;
+}
+
 function authTarget(path: string) {
   return `${AUTH_PROXY_BASE}/${path}`;
 }
@@ -43,6 +70,9 @@ async function fetchAuthResponse(path: string, init: RequestInit) {
 
 export function clearClientAuthState() {
   if (typeof window === 'undefined') return;
+  isLoggingOut = true;
+  lastTokenIssuedAt = 0;
+  lastTokenMarker = '';
 
   const cookieNames = new Set<string>(AUTH_COOKIE_NAMES);
   document.cookie.split(';').forEach((chunk) => {
@@ -60,6 +90,7 @@ export function clearClientAuthState() {
     localStorage.removeItem('userRole');
     localStorage.removeItem('accessToken');
     localStorage.removeItem('loginAt');
+    localStorage.removeItem(TOKEN_ISSUED_AT_KEY);
 
     for (let index = localStorage.length - 1; index >= 0; index -= 1) {
       const key = localStorage.key(index);
@@ -95,6 +126,7 @@ export async function registerUser(payload: AuthPayload) {
 
 export async function loginUser(payload: AuthPayload) {
   try {
+    isLoggingOut = false;
     const res = await fetchAuthResponse('login', {
       method: 'POST',
       credentials: 'include',
@@ -123,13 +155,15 @@ export async function loginUser(payload: AuthPayload) {
 
     const contentType = res.headers.get('content-type') || '';
     if (contentType.includes('application/json')) {
+      let result: unknown = text;
       try {
-        return JSON.parse(text);
-      } catch {
-        return text;
-      }
+        result = JSON.parse(text);
+      } catch {}
+      recordTokenIssued();
+      return result;
     }
 
+    recordTokenIssued();
     return { result: text };
   } catch (err) {
     console.error('loginUser error', err);
@@ -168,16 +202,38 @@ export function fetchCurrentUser() {
 }
 
 function refreshAccessToken(): Promise<boolean> {
+  if (isLoggingOut) return Promise.resolve(false);
   if (!refreshInFlight) {
-    refreshInFlight = fetch(authTarget('refresh'), {
-      method: 'POST',
-      credentials: 'include',
-      cache: 'no-store',
-    }).then((res) => res.ok).catch(() => false).finally(() => {
-      refreshInFlight = null;
+    const markerBeforeRefresh = readTokenMarker();
+    const rotate = async () => {
+      if (isLoggingOut) return false;
+      const latestMarker = readTokenMarker();
+      if (latestMarker && latestMarker !== markerBeforeRefresh) return true;
+
+      const res = await fetch(authTarget('refresh'), {
+        method: 'POST',
+        credentials: 'include',
+        cache: 'no-store',
+      });
+      if (res.ok && !isLoggingOut) recordTokenIssued();
+      return res.ok && !isLoggingOut;
+    };
+
+    // A refresh token can only be used once. Serialize rotations across open tabs.
+    const locks = typeof navigator !== 'undefined' ? navigator.locks : undefined;
+    const runRefresh = async (): Promise<boolean> => {
+      if (locks) return await locks.request('dhamma-school-refresh-token', rotate);
+      return rotate();
+    };
+    refreshInFlight = runRefresh().catch(() => false).finally(() => {
+        refreshInFlight = null;
     });
   }
   return refreshInFlight;
+}
+
+export function renewSessionIfNeeded(): Promise<boolean> {
+  return sessionNeedsRenewal() ? refreshAccessToken() : Promise.resolve(true);
 }
 
 export async function fetchWithAuth(input: string, init: RequestInit = {}): Promise<Response> {
@@ -193,6 +249,8 @@ export async function fetchWithAuth(input: string, init: RequestInit = {}): Prom
 
 export async function logoutUser() {
   try {
+    isLoggingOut = true;
+    if (refreshInFlight) await refreshInFlight;
     const res = await fetchAuthResponse('logout', {
       method: 'POST',
       credentials: 'include',

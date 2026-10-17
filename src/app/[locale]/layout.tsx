@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "../globals.css";
 import { NextIntlClientProvider } from "next-intl";
 import Header from "../features/Header";
+import SessionRenewal from "../features/auth/SessionRenewal";
 import { getMessages } from "../../i18n";
 import { defaultLocale } from "../../config";
 
@@ -36,6 +37,7 @@ export default async function LocaleLayout({
     <NextIntlClientProvider messages={messages} locale={locale}>
       <div className={`${geistSans.variable} ${geistMono.variable} h-full antialiased min-h-full flex flex-col`} lang={locale}>
         <Header />
+        <SessionRenewal />
         {children}
       </div>
     </NextIntlClientProvider>

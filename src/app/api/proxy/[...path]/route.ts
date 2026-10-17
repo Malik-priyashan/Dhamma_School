@@ -1,6 +1,31 @@
 import { NextRequest } from 'next/server';
 
 const DEFAULT_PRODUCTION_BACKEND_URL = 'https://dhamma-school-be.vercel.app';
+const MAX_PROXY_BODY_BYTES = 8 * 1024 * 1024;
+
+async function readBodyWithLimit(req: NextRequest): Promise<ArrayBuffer | null> {
+  if (!req.body) return new ArrayBuffer(0);
+  const reader = req.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > MAX_PROXY_BODY_BYTES) {
+      await reader.cancel();
+      return null;
+    }
+    chunks.push(value);
+  }
+  const body = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    body.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return body.buffer;
+}
 
 function isLocalBackendUrl(value: string) {
   try {
@@ -61,7 +86,14 @@ async function proxyRequest(req: NextRequest, _params: { path: string[] }) {
 
   try {
     const isBodyAllowed = !['GET', 'HEAD'].includes(req.method);
-    const requestBody = isBodyAllowed ? await req.arrayBuffer() : undefined;
+    const declaredLength = Number(req.headers.get('content-length'));
+    if (isBodyAllowed && declaredLength > MAX_PROXY_BODY_BYTES) {
+      return new Response('Request body too large', { status: 413 });
+    }
+    const requestBody = isBodyAllowed ? await readBodyWithLimit(req) : undefined;
+    if (requestBody === null) {
+      return new Response('Request body too large', { status: 413 });
+    }
     let response: Response | null = null;
 
     for (let i = 0; i < candidateUrls.length; i++) {
@@ -91,6 +123,9 @@ async function proxyRequest(req: NextRequest, _params: { path: string[] }) {
     proxyHeaders.delete('content-length');
     proxyHeaders.delete('transfer-encoding');
     proxyHeaders.delete('connection');
+    if (['auth', 'marks', 'student', 'student-request', 'prefect', 'announcing', 'contact-us', 'users'].includes(pathSegments[0])) {
+      proxyHeaders.set('Cache-Control', 'private, no-store');
+    }
     
     // THIS IS THE CRUCIAL PART FOR SAFARI:
     // Strip the "Domain=..." restriction from Set-Cookie headers 
@@ -112,7 +147,7 @@ async function proxyRequest(req: NextRequest, _params: { path: string[] }) {
     });
   } catch (error) {
     console.error('Proxy Error:', error);
-    return new Response(JSON.stringify({ error: 'Proxy Request Failed', details: String(error) }), { 
+    return new Response(JSON.stringify({ error: 'Proxy Request Failed' }), {
       status: 502,
       headers: { 'Content-Type': 'application/json' }
     });

@@ -176,7 +176,8 @@ export default function Header() {
 
   // No inline popup form here — navigation goes to the competitions page.
   const isAuthPage = pathname?.includes('/login') || pathname?.includes('/register');
-  const hasVerifiedSession = isAuthenticated === true && verifiedPathname === pathname;
+  // Keep the confirmed session visible while the next pathname is revalidated.
+  const hasVerifiedSession = isAuthenticated === true;
   const isSignedOut = isAuthenticated === false && verifiedPathname === pathname;
   if (isAuthPage) {
     return null;
