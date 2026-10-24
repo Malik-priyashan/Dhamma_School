@@ -241,12 +241,12 @@ export default function StudentCard({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
-      <div className="relative max-h-[90vh] w-full max-w-5xl overflow-auto rounded-2xl bg-white shadow-2xl animate-in fade-in zoom-in duration-200">
+      <div className="student-profile-card relative max-h-[92vh] w-full max-w-5xl overflow-auto rounded-3xl bg-slate-50 shadow-2xl animate-in fade-in zoom-in duration-200">
         {/* Header */}
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-100 bg-white/95 backdrop-blur-md p-6 px-8 shadow-sm">
-          <div className="flex items-center gap-6">
+        <div className="sticky top-0 z-10 flex flex-col gap-4 border-b border-slate-200 bg-white/95 p-5 shadow-sm backdrop-blur-md sm:flex-row sm:items-center sm:justify-between sm:px-8 sm:py-6">
+          <div className="flex min-w-0 items-center gap-4 sm:gap-6">
             <div className="relative group">
-                <div className={`h-24 w-24 shrink-0 overflow-hidden rounded-2xl border-2 border-white shadow-md ring-1 ring-slate-200 bg-slate-50 flex items-center justify-center ${isEditing ? 'cursor-pointer hover:ring-blue-400' : ''}`}
+                <div className={`flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border-2 border-white bg-slate-50 shadow-sm ring-1 ring-slate-200 sm:h-20 sm:w-20 ${isEditing ? 'cursor-pointer hover:ring-blue-400' : ''}`}
                      onClick={() => isEditing && fileInputRef.current?.click()}>
                     {previewUrl ? (
                       <img
@@ -276,14 +276,15 @@ export default function StudentCard({
                     onChange={handleFileChange}
                 />
             </div>
-            <div>
-              <h2 className="text-2xl font-bold text-slate-900">
+            <div className="min-w-0">
+              <p className="text-xs font-bold uppercase tracking-widest text-blue-600">Student profile</p>
+              <h2 className="mt-1 truncate text-xl font-bold text-slate-900 sm:text-2xl">
                 {student.fullNameWithSurname || "Student Details"}
               </h2>
-              <p className="text-slate-500 text-sm mt-1">ID: {student.id}</p>
+              <div className="mt-2 flex flex-wrap gap-2 text-xs font-semibold"><span className="rounded-full bg-blue-50 px-3 py-1 text-blue-700">Grade {student.grade || '—'}</span><span className="rounded-full bg-slate-100 px-3 py-1 text-slate-600">{student.gender === 'BOY' ? 'Boy' : student.gender === 'GIRL' ? 'Girl' : 'Gender not recorded'}</span></div>
             </div>
           </div>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-2 sm:justify-end">
             {isEditing ? (
               <>
                 <button
@@ -324,7 +325,7 @@ export default function StudentCard({
           </div>
         </div>
 
-        <div className="space-y-10 p-8">
+        <div className="space-y-5 p-4 sm:p-6">
           {/* Main Information */}
           <section>
             <h3 className="mb-6 flex items-center gap-2 text-lg font-bold text-slate-900">

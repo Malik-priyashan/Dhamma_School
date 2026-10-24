@@ -817,7 +817,7 @@ export default function AdminContentManagerPage({
   if (!isAuthenticated) return null;
 
   return (
-    <main className="min-h-screen flex-1 bg-slate-50 p-4 pt-20 md:ml-64 md:p-8 md:pt-12">
+    <main className="admin-workspace min-h-screen flex-1 bg-slate-50 p-4 pt-20 md:ml-64 md:p-8 md:pt-12">
       <div className="mx-auto max-w-7xl space-y-6">
         <div className="overflow-hidden rounded-4xl border border-slate-200 bg-white shadow-sm">
           <div className={`h-1.5 ${accentClassName}`} />
@@ -833,7 +833,7 @@ export default function AdminContentManagerPage({
               <button
                 type="button"
                 onClick={openCreate}
-                className="inline-flex items-center justify-center rounded-full bg-slate-900 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-slate-900/15 transition hover:bg-slate-800 active:scale-[0.98]"
+                className="inline-flex items-center justify-center rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-blue-700"
               >
                 {addButtonLabel}
               </button>

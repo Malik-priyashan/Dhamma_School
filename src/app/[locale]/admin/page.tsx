@@ -7,6 +7,7 @@ import { fetchCurrentUser } from "../../features/auth/api/authApi";
 import { getUserRole } from "../../../lib/authUtils";
 import LoadingPage from "../../components/ui/LoadingPage";
 import { promoteStudentGrades } from "../../features/students/api/studentsApi";
+import DashboardOverview from "../../features/admin/DashboardOverview";
 
 export default function AdminPage() {
   const router = useRouter();
@@ -17,6 +18,7 @@ export default function AdminPage() {
   const [showPromoteConfirm, setShowPromoteConfirm] = useState(false);
   const [isPromoting, setIsPromoting] = useState(false);
   const [promoteStatus, setPromoteStatus] = useState<{ success?: string; error?: string } | null>(null);
+  const [dashboardRefresh, setDashboardRefresh] = useState(0);
 
   useEffect(() => {
     let isMounted = true;
@@ -53,37 +55,25 @@ export default function AdminPage() {
   if (!isAuthenticated) return null;
 
   return (
-    <main className="min-h-screen bg-slate-50 flex-1 ml-0 md:ml-64 p-4 md:p-8 pt-20 md:pt-12">
-      <div className="max-w-6xl mx-auto space-y-6">
-        <h1 className="text-3xl font-extrabold text-slate-900 border-b border-slate-200 pb-4">
-          Admin Dashboard
-        </h1>
-        <p className="text-slate-600">
-          Welcome to the Admin Dashboard.
-        </p>
-
-        {/* Quick Actions Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
-          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
-            <div>
-              <div className="w-12 h-12 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center mb-4">
-                <svg className="w-6 h-6 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                </svg>
-              </div>
-              <h3 className="text-lg font-bold text-slate-900">Promote Student Grades</h3>
-              <p className="text-slate-500 text-sm mt-2 leading-relaxed">
-                Promote all students by one grade level and automatically graduate (delete) Grade 11 students.
-              </p>
-            </div>
-            <button
-              onClick={() => setShowPromoteConfirm(true)}
-              className="w-full mt-6 py-3 bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-2xl font-bold hover:from-red-600 hover:to-orange-600 transition-all active:scale-[0.98] shadow-md hover:shadow-lg"
-            >
-              Promote Grades
-            </button>
+    <main className="admin-workspace min-h-screen flex-1 bg-[#f4f7fb] px-4 pb-10 pt-20 md:ml-64 md:px-8 md:pt-10">
+      <div className="mx-auto max-w-7xl space-y-7">
+        <header className="relative overflow-hidden rounded-[28px] border border-slate-200 bg-white px-6 py-8 text-slate-900 shadow-sm sm:px-9 sm:py-10">
+          <div className="absolute -right-16 -top-24 h-72 w-72 rounded-full border-[42px] border-blue-50" aria-hidden="true" />
+          <div className="relative"><p className="text-xs font-bold uppercase tracking-[0.22em] text-blue-600">Dhamma School · Administration</p>
+            <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Admin Dashboard</h1>
+            <p className="mt-2 max-w-xl text-sm leading-6 text-slate-500 sm:text-base">A clear view of students, teachers, and approved activities.</p>
           </div>
-        </div>
+        </header>
+        <DashboardOverview refreshKey={dashboardRefresh} />
+
+        <section className="flex flex-col gap-5 rounded-[28px] border border-rose-100 bg-white p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-7">
+          <div className="flex items-start gap-4"><span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-rose-50 text-rose-600">
+            <svg className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path d="m13 2-9 12h7l-1 8 10-13h-7V2z" /></svg>
+          </span><div><p className="text-xs font-bold uppercase tracking-[0.18em] text-rose-600">Academic year action</p><h2 className="mt-1 text-lg font-bold text-slate-900">Promote Student Grades</h2>
+            <p className="mt-1 max-w-xl text-sm leading-6 text-slate-500">Move Grades 1–10 forward and graduate Grade 11 students. Review the details before continuing.</p>
+          </div></div>
+          <button onClick={() => setShowPromoteConfirm(true)} className="shrink-0 rounded-xl bg-rose-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-rose-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-2">Promote Grades</button>
+        </section>
 
         {/* Promote Grades Confirmation Modal */}
         {showPromoteConfirm && (
@@ -172,6 +162,7 @@ export default function AdminPage() {
                             setPromoteStatus({
                               success: `${res.message} ${res.graduatedCount} students graduated successfully.`,
                             });
+                            setDashboardRefresh((current) => current + 1);
                           } catch (err: any) {
                             setPromoteStatus({
                               error: err.message || "Failed to promote student grades.",

@@ -674,9 +674,9 @@ export default function AdminMessagesCenterPage() {
   if (!isAuthenticated) return null;
 
   return (
-    <main className="min-h-screen overflow-hidden bg-white px-4 pb-4 pt-8 sm:px-6 md:ml-64 md:pt-4">
-      <div className="mx-auto flex h-[calc(100vh)] w-full max-w-[96rem] flex-col">
-        <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-4xl border border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.08)]">
+    <main className="admin-workspace min-h-screen overflow-hidden px-4 pb-4 pt-20 sm:px-6 md:ml-64 md:pt-4">
+      <div className="mx-auto flex h-[calc(100dvh-6rem)] w-full max-w-7xl flex-col md:h-[calc(100dvh-2rem)]">
+        <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
           <div className="border-b border-slate-100 px-5 py-4 sm:px-6 sm:py-5">
             <p className="text-[10px] font-semibold uppercase tracking-[0.35em] text-sky-700">Admin Chat</p>
             <h1 className="mt-2 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
@@ -703,11 +703,11 @@ export default function AdminMessagesCenterPage() {
             </button>
           )}
 
-          <div className="grid flex-1 min-h-0 gap-0 lg:grid-cols-[330px_minmax(0,1fr)]">
-              <aside className="flex min-h-0 flex-col border-b border-emerald-700/10 bg-[#efeae2] px-3 py-3 sm:px-4 lg:border-b-0 lg:border-r lg:px-3">
-                <div className="mb-3 flex items-center justify-between rounded-3xl border border-emerald-700/10 bg-white px-3 py-2.5 shadow-sm">
+          <div className="grid min-h-0 flex-1 grid-rows-[minmax(180px,35%)_minmax(0,1fr)] lg:grid-cols-[330px_minmax(0,1fr)] lg:grid-rows-1">
+              <aside className="flex min-h-0 flex-col border-b border-slate-200 bg-slate-50 px-3 py-3 sm:px-4 lg:border-b-0 lg:border-r lg:px-3">
+                <div className="mb-3 flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-3 py-2.5 shadow-sm">
                 <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-emerald-700">Users</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-blue-700">Users</p>
                     <p className="mt-1 text-xs font-semibold text-slate-900">
                     {threads.length} chats
                     {totalUnreadIncomingMessages > 0 && (
@@ -720,7 +720,7 @@ export default function AdminMessagesCenterPage() {
                 <button
                   onClick={() => loadThreads()}
                   type="button"
-                    className="rounded-full bg-emerald-600 px-3 py-1.5 text-[11px] font-semibold text-white transition hover:bg-emerald-700"
+                    className="rounded-xl bg-blue-600 px-3 py-1.5 text-[11px] font-semibold text-white transition hover:bg-blue-700"
                 >
                   Refresh
                 </button>
@@ -753,18 +753,18 @@ export default function AdminMessagesCenterPage() {
                         onClick={() => handleThreadOpen(thread.threadId)}
                         className={`w-full rounded-3xl border px-3 py-3 text-left transition ${
                           active
-                            ? "border-emerald-200 bg-white shadow-[0_10px_30px_rgba(16,185,129,0.12)]"
-                            : "border-emerald-700/10 bg-white hover:-translate-y-0.5 hover:shadow-sm"
+                            ? "border-blue-300 bg-blue-50 shadow-sm"
+                            : "border-slate-200 bg-white hover:bg-slate-50"
                         }`}
                       >
                         <div className="flex items-start gap-3">
-                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-emerald-600 to-emerald-400 text-xs font-bold text-white shadow-sm ring-4 ring-emerald-100">
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700">
                             {initials}
                           </div>
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center justify-between gap-2">
                               <p className="truncate text-xs font-bold text-slate-950">{userLabel}</p>
-                              <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${unread ? "bg-rose-100 text-rose-700" : "bg-emerald-50 text-emerald-700"}`}>
+                              <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${unread ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-600"}`}>
                                 {unread ? `${unreadCount} new` : "Read"}
                               </span>
                             </div>
@@ -781,21 +781,21 @@ export default function AdminMessagesCenterPage() {
               </div>
             </aside>
 
-            <section className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[#efeae2]">
+            <section className="flex min-h-0 flex-1 flex-col overflow-hidden bg-slate-50">
               {!selectedThread ? (
                 <div className="flex flex-1 items-center justify-center px-6 text-sm text-slate-500">
                   Select a conversation to open the chat.
                 </div>
               ) : (
                 <>
-                  <div className="flex items-center justify-between border-b border-emerald-700/10 bg-emerald-600 px-4 py-2 text-white sm:px-5">
+                  <div className="flex items-center justify-between border-b border-blue-700/10 bg-blue-600 px-4 py-2 text-white sm:px-5">
                     <div>
                       <h2 className="text-sm font-bold sm:text-base">Dhamma School Admin Chat</h2>
-                      <p className="text-[11px] text-emerald-100">
+                      <p className="text-[11px] text-blue-100">
                         {selectedThread.senderName || resolveStudentNames(selectedThread.studentNames, studentNameById)[0] || "Unknown Sender"}
                       </p>
                     </div>
-                    <div className="flex items-center gap-3 text-right text-[10px] text-emerald-100">
+                    <div className="flex items-center gap-3 text-right text-[10px] text-blue-100">
                       <div>
                         <p>{selectedThread.messages.length} messages</p>
                         <p>
@@ -829,7 +829,7 @@ export default function AdminMessagesCenterPage() {
                             <div key={message.id} className={`flex ${isAdmin ? "justify-end" : "justify-start"}`}>
                               <div
                                 className={`max-w-[86%] rounded-3xl px-3 py-2.5 text-sm shadow-sm sm:max-w-[72%] ${
-                                  isAdmin ? "rounded-br-md bg-[#d9fdd3] text-slate-800" : "rounded-bl-md bg-white text-slate-800"
+                                  isAdmin ? "rounded-br-md bg-blue-100 text-slate-800" : "rounded-bl-md bg-white text-slate-800"
                                 }`}
                               >
                                       {((message.senderName || senderLabel) && (
@@ -849,21 +849,21 @@ export default function AdminMessagesCenterPage() {
                     </div>
                   </div>
 
-                  <div className="border-t border-slate-200 bg-[#f0f2f5] px-3 py-2 sm:px-4 sm:py-3">
+                  <div className="border-t border-slate-200 bg-white px-3 py-2 sm:px-4 sm:py-3">
                     <div className="rounded-2xl bg-white p-1.5 shadow-sm">
                       <div className="mb-1.5 text-[10px] text-slate-600">Replies are saved as admin automatically.</div>
                       <div className="flex items-end gap-2">
                         <textarea
                           value={replyMessage}
                           onChange={(e) => setReplyMessage(e.target.value)}
-                          className="min-h-10 flex-1 resize-none rounded-xl border border-transparent bg-transparent px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-emerald-300 focus:bg-emerald-50/40"
+                          className="min-h-10 flex-1 resize-none rounded-xl border border-transparent bg-transparent px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-300 focus:bg-blue-50/40"
                           placeholder="Type a reply"
                         />
                         <button
                           type="button"
                           onClick={handleReplySend}
                           disabled={isSendingReply || !replyMessage.trim()}
-                          className="rounded-full bg-emerald-600 px-4 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-300"
+                          className="rounded-xl bg-blue-600 px-4 py-1.5 text-xs font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
                         >
                           {isSendingReply ? "Sending..." : "Send"}
                         </button>

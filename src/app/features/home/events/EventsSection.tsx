@@ -19,17 +19,12 @@ type EventsSectionProps = {
 function LoadingCard({ mode }: { mode: "preview" | "full" }) {
   if (mode === "preview") {
     return (
-      <div className="flex min-h-52 gap-4 rounded-3xl bg-white p-3.5 shadow-sm">
-        <div className="h-28 w-28 shrink-0 rounded-2xl bg-black/10 sm:h-40 sm:w-40" />
-        <div className="min-w-0 flex-1 space-y-3">
-          <div className="h-4 w-3/4 rounded-full bg-black/10" />
-          <div className="h-3 w-24 rounded-full bg-black/10" />
-          <div className="space-y-2 pt-1">
-            <div className="h-3 w-full rounded-full bg-black/10" />
-            <div className="h-3 w-5/6 rounded-full bg-black/10" />
-            <div className="h-3 w-2/3 rounded-full bg-black/10" />
-          </div>
-          <div className="h-3 w-24 rounded-full bg-black/10" />
+      <div aria-hidden="true" className="grid min-h-36 animate-pulse grid-cols-[104px_minmax(0,1fr)] items-center gap-3 rounded-2xl border border-amber-100 bg-white p-2.5 sm:grid-cols-[132px_minmax(0,1fr)] sm:gap-4">
+        <div className="h-28 w-full rounded-xl bg-amber-50 sm:h-32" />
+        <div className="min-w-0 space-y-2">
+          <div className="h-4 w-5/6 rounded-full bg-amber-50" />
+          <div className="h-3 w-full rounded-full bg-amber-50" />
+          <div className="h-3 w-2/3 rounded-full bg-amber-50" />
         </div>
       </div>
     );
@@ -61,10 +56,10 @@ function getPreviewEvents(items: HomeContentItem[], now: number) {
     .filter((item) => item.dateMs === 0 || item.dateMs >= now)
     .sort((left, right) => left.dateMs - right.dateMs);
 
-  const selected = [...pastEvents.slice(0, 2), ...upcomingEvents.slice(0, 1)];
+  const selected = [...upcomingEvents.slice(0, 2), ...pastEvents.slice(0, 1)];
 
   if (selected.length < 3) {
-    const remaining = [...pastEvents, ...upcomingEvents].filter((item) => !selected.some((chosen) => chosen.id === item.id));
+    const remaining = [...upcomingEvents, ...pastEvents].filter((item) => !selected.some((chosen) => chosen.id === item.id));
     selected.push(...remaining.slice(0, 3 - selected.length));
   }
 
@@ -88,7 +83,8 @@ export default function EventsSection({ mode = "preview" }: EventsSectionProps) 
       setError(null);
 
       try {
-        const payload = await fetchHomeEvents();
+        const payload = await fetchHomeEvents(controller.signal);
+        if (controller.signal.aborted) return;
         const normalizedItems = normalizeHomeEvents(payload, locale);
         const currentTime = Date.now();
         const pastEvents = normalizedItems
@@ -131,27 +127,15 @@ export default function EventsSection({ mode = "preview" }: EventsSectionProps) 
         <Link
           key={item.id}
           href={detailsHref}
-          className="group flex min-h-52 cursor-pointer gap-4 rounded-3xl bg-white p-3.5 text-left shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_35px_rgba(0,0,0,0.08)] focus:outline-none focus:ring-2 focus:ring-blue-200"
+          className="group grid min-h-36 grid-cols-[104px_minmax(0,1fr)] items-center gap-3 rounded-2xl border border-amber-100 bg-white p-2.5 text-left shadow-sm transition hover:border-amber-200 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600 sm:grid-cols-[132px_minmax(0,1fr)] sm:gap-4"
         >
-          <div className="relative h-28 w-28 shrink-0 overflow-hidden rounded-2xl bg-black/5 sm:h-40 sm:w-40">
-            <img src={item.image} alt={item.title} loading="lazy" decoding="async" className="h-full w-full object-cover transition duration-300 group-hover:scale-105" />
-            <div className="absolute inset-0 bg-black/10" />
+          <div className="h-28 w-full overflow-hidden rounded-xl bg-amber-50 sm:h-32">
+            <img src={item.image} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover transition duration-300 group-hover:scale-105" />
           </div>
-
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <h4 className="text-base font-bold text-black sm:text-lg">{item.title}</h4>
-              <span className="rounded-full border border-black/10 bg-black/5 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-[0.2em] text-black/70">
-                {getEventPhase(item, now) === "past" ? t("events_section_phase_past") : t("events_section_phase_upcoming")}
-              </span>
-            </div>
-            {item.dateLabel && <p className="mt-1 text-sm font-semibold text-black/70">{item.dateLabel}</p>}
-            <p className={`mt-2 text-sm leading-6 text-black/70 ${item.description ? "line-clamp-3" : ""}`}>
-              {item.description}
-            </p>
-            <span className="mt-3 inline-block text-sm font-semibold text-blue-600 transition group-hover:text-blue-700 group-hover:underline">
-              {t("events_section_see_more")}
-            </span>
+          <div className="flex min-w-0 flex-col justify-center">
+            <h4 className="line-clamp-2 text-sm font-bold leading-snug text-slate-900 sm:text-base">{item.title}</h4>
+            {item.description && <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-600">{item.description}</p>}
+            <span className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-amber-800 group-hover:underline">{t("events_section_see_more")} <span aria-hidden="true">→</span></span>
           </div>
         </Link>
       );
@@ -210,7 +194,7 @@ export default function EventsSection({ mode = "preview" }: EventsSectionProps) 
 
   if (mode === "preview") {
     return (
-      <article className="rounded-3xl border border-black/10 bg-white p-5 shadow-[0_18px_50px_rgba(0,0,0,0.06)] sm:p-6">
+      <article className="flex h-full flex-col rounded-3xl border border-amber-100 bg-linear-to-b from-amber-50/80 to-white p-5 shadow-[0_18px_50px_rgba(0,0,0,0.06)] sm:p-6">
         <div className="flex items-center justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-black/70">{t("events_section_label")}</p>
@@ -232,11 +216,11 @@ export default function EventsSection({ mode = "preview" }: EventsSectionProps) 
             ? Array.from({ length: 3 }).map((_, index) => <LoadingCard key={`preview-loading-${index}`} mode="preview" />)
             : items.length
               ? items.slice(0, 3).map(renderCard)
-              : <p className="rounded-2xl border border-dashed border-black/10 px-4 py-5 text-sm text-black/70">{t("no_upcoming_events") || "No upcoming events."}</p>}
+              : !error && <p className="rounded-2xl border border-dashed border-amber-200 bg-white px-5 py-8 text-sm text-slate-600">{t("events_section_empty")}</p>}
         </div>
 
-        <div className="mt-5 flex justify-end">
-          <Link href={`/${locale}/events`} className="rounded-full border border-black px-4 py-2 text-sm font-semibold text-black transition hover:bg-black hover:text-white">
+        <div className="mt-auto flex justify-end pt-5">
+          <Link href={`/${locale}/events`} className="rounded-full border border-amber-200 bg-white px-4 py-2 text-sm font-semibold text-amber-900 transition hover:border-amber-700 hover:bg-amber-700 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600">
             {t("events_section_all")}
           </Link>
         </div>

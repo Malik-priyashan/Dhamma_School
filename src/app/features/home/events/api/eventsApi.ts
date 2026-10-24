@@ -1,10 +1,11 @@
 export type HomeEventsApiItem = Record<string, unknown>;
 
-export async function fetchHomeEvents(): Promise<HomeEventsApiItem[]> {
+export async function fetchHomeEvents(signal?: AbortSignal): Promise<HomeEventsApiItem[]> {
   const res = await fetch("/api/proxy/events", {
     method: "GET",
     credentials: "include",
     cache: "no-store",
+    signal,
     headers: { "Content-Type": "application/json" },
   });
 

@@ -8,7 +8,7 @@ import { getUserRole } from "../../../../lib/authUtils";
 import { useStudentRequests } from "../../../features/studentrequest/hooks/useStudentRequests";
 import StudentRequestCard from "../../../features/studentrequest/components/StudentRequestCard";
 import { StudentRequest } from "../../../features/studentrequest/types/types";
-import { acceptStudentRequest, rejectStudentRequest, updateStudent } from "../../../features/studentrequest/api/studentRequestsApi";
+import { acceptStudentRequest, rejectStudentRequest } from "../../../features/studentrequest/api/studentRequestsApi";
 import LoadingPage from "../../../components/ui/LoadingPage";
 
 export default function StudentRequestsPage() {
@@ -60,43 +60,20 @@ export default function StudentRequestsPage() {
   );
   const [selected, setSelected] = useState<StudentRequest | null>(null);
   const [processingId, setProcessingId] = useState<string | null>(null);
-  const [studentIdsByRequestId, setStudentIdsByRequestId] = useState<Record<string, string>>({});
-
-  const parseStudentId = (response: any, fallbackRequestId: string) => {
-    return response?.student?.id || response?.studentId || response?.id || fallbackRequestId;
-  };
-
   const openRequest = (request: StudentRequest) => {
-    const studentId = studentIdsByRequestId[request.id] || request.studentId;
-    setSelected(studentId ? { ...request, studentId } : request);
+    setSelected(request);
   };
 
   const handleAccept = async (e: React.MouseEvent, req: StudentRequest) => {
     e.stopPropagation();
+    if (!req.gender) return alert("Select girl or boy before approving.");
+    if (!Array.from({ length: 11 }, (_, i) => String(i + 1)).includes(req.grade || '')) return alert("Select a grade from 1 to 11 before approving.");
     if (!confirm("Are you sure you want to accept this student request and save to the student table?")) return;
     
     setProcessingId(req.id || null);
     try {
       if (req.id) {
-        // First accept the request to trigger student creation on the backend
-        const acceptResponse = await acceptStudentRequest(req.id);
-        
-        // Use the new student's ID (or fallback to req.id if the ID is preserved)
-        const newStudentId = parseStudentId(acceptResponse, req.id);
-        setStudentIdsByRequestId((current) => ({ ...current, [req.id]: newStudentId }));
-        
-        // Extract admin details added from the card
-        const adminDetails = {
-          indexNo: (req as any).indexNo,
-          libraryNo: (req as any).libraryNo,
-          house: (req as any).house,
-          grade: (req as any).grade,
-          registrationDate: (req as any).registrationDate,
-          studentActiveMonitor: (req as any).studentActiveMonitor,
-        };
-        
-        // Update the student in the database with the admin details
-        await updateStudent(newStudentId, adminDetails);
+        await acceptStudentRequest(req.id, req);
       }
       alert("Student accepted and successfully saved to student database!");
       refetch();
@@ -130,19 +107,19 @@ export default function StudentRequestsPage() {
   if (!isAuthenticated) return null;
 
   return (
-    <main className="min-h-screen bg-slate-50 flex-1 ml-0 md:ml-64 p-4 md:p-8 pt-20 md:pt-12">
+    <main className="admin-workspace min-h-screen bg-slate-50 flex-1 ml-0 md:ml-64 p-4 md:p-8 pt-20 md:pt-12">
       <div className="max-w-6xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between md:p-8">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900 border-b border-slate-200 pb-4">
+            <h1 className="text-3xl font-bold tracking-tight text-slate-900">
               Student Requests
             </h1>
-            <p className="text-slate-600">Review and manage student requests here.</p>
+            <p className="mt-2 text-sm text-slate-500">Review and manage student requests.</p>
           </div>
           <div>
             <button
               onClick={() => refetch()}
-              className="px-3 py-2 bg-sky-600 text-white rounded"
+              className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
             >
               Refresh
             </button>
@@ -230,14 +207,15 @@ export default function StudentRequestsPage() {
 
         {!loading && data.length > 0 && (
           <>
-            <div className="overflow-x-auto bg-white rounded-lg shadow-md border border-slate-200">
+            <div className="overflow-x-auto rounded-3xl border border-slate-200 bg-white shadow-sm">
               <table className="w-full text-left">
-                <thead className="bg-gradient-to-r from-sky-50 to-blue-50 border-b-2 border-slate-200">
+                <thead className="border-b border-slate-200 bg-slate-50">
                   <tr>
                     <th className="px-6 py-4 font-semibold text-slate-700 text-sm">Name</th>
                     <th className="px-6 py-4 font-semibold text-slate-700 text-sm">Address</th>
                     <th className="px-6 py-4 font-semibold text-slate-700 text-sm">Phone 1</th>
                     <th className="px-6 py-4 font-semibold text-slate-700 text-sm">Birthday</th>
+                    <th className="px-6 py-4 font-semibold text-slate-700 text-sm">Gender</th>
                     <th className="px-6 py-4 font-semibold text-slate-700 text-sm">Request Date</th>
                     <th className="px-6 py-4 font-semibold text-slate-700 text-sm">Status</th>
                     <th className="px-6 py-4 font-semibold text-slate-700 text-sm text-center">Actions</th>
@@ -247,7 +225,7 @@ export default function StudentRequestsPage() {
                   {data.map((r) => (
                     <tr
                       key={r.id}
-                      className="hover:bg-sky-50 cursor-pointer transition-colors duration-200"
+                      className="cursor-pointer transition-colors duration-200 hover:bg-slate-50"
                       onClick={() => openRequest(r)}
                     >
                       <td className="px-6 py-4 text-sm font-medium text-slate-900">{r.fullNameWithSurname || 'N/A'}</td>
@@ -256,6 +234,7 @@ export default function StudentRequestsPage() {
                       <td className="px-6 py-4 text-sm text-slate-600">
                         {r.dob ? new Date(r.dob).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A'}
                       </td>
+                      <td className="px-6 py-4 text-sm text-slate-600">{r.gender === 'GIRL' ? 'Girl' : r.gender === 'BOY' ? 'Boy' : '—'}</td>
                       <td className="px-6 py-4 text-sm text-slate-600">
                         {r.createdAt ? new Date(r.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A'}
                       </td>
@@ -268,13 +247,13 @@ export default function StudentRequestsPage() {
                           {r.status || 'PENDING'}
                         </span>
                       </td>
-                      <td className="px-6 py-4 flex gap-2 justify-center">
+                      <td className="px-6 py-4 text-center">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             openRequest(r);
                           }}
-                          className="px-4 py-2 bg-sky-100 text-sky-700 hover:bg-sky-200 rounded-md font-medium text-sm transition-colors"
+                          className="rounded-lg bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 transition-colors hover:bg-blue-100"
                           title="View Details"
                         >
                           View
@@ -288,7 +267,7 @@ export default function StudentRequestsPage() {
 
             {/* Pagination Controls */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-between border border-slate-205 bg-white px-6 py-4.5 rounded-3xl shadow-sm mt-4">
+              <div className="mt-4 flex items-center justify-between rounded-3xl border border-slate-200 bg-white px-6 py-4 shadow-sm">
                 <div className="flex flex-1 justify-between sm:hidden">
                   <button
                     onClick={() => setCurrentPage(currentPage - 1)}

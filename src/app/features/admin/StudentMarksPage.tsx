@@ -74,11 +74,11 @@ export default function StudentMarksPage() {
   if (!isAuthenticated) return null;
 
   return (
-    <main className="min-h-screen bg-slate-50 flex-1 ml-0 md:ml-64 p-4 md:p-8 pt-20 md:pt-12">
-      <div className="max-w-6xl mx-auto space-y-8">
+    <main className="admin-workspace min-h-screen bg-slate-50 flex-1 ml-0 md:ml-64 p-4 md:p-8 pt-20 md:pt-12">
+      <div className="max-w-6xl mx-auto space-y-6">
         
         {/* Header with Stats & Actions */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white p-8 rounded-3xl shadow-sm border border-slate-200 animate-in fade-in slide-in-from-top-4 duration-500">
+        <div className="flex flex-col gap-5 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:flex-row md:items-center md:justify-between md:p-8">
             <div>
                 <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Student Marks (Admin)</h1>
                 <p className="text-slate-500 mt-1 font-medium">Select a grade, set teacher & academic year info, and manage marks with update capability.</p>
@@ -151,7 +151,7 @@ export default function StudentMarksPage() {
         </div>
 
         {/* Integrated Filter Bar */}
-        <div className={`grid grid-cols-1 md:grid-cols-12 gap-4 bg-white p-4 rounded-3xl shadow-sm border border-slate-200 sticky top-4 z-20 backdrop-blur-md bg-white/90 transition-opacity ${!isInfoSaved ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
+        <div className={`grid grid-cols-1 gap-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition-opacity md:grid-cols-12 ${!isInfoSaved ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
             <div className="md:col-span-4 relative group">
                 <label className="absolute left-4 -top-2.5 px-2 bg-white text-[10px] font-bold text-blue-600 uppercase tracking-widest z-10">Select Grade</label>
                 <div className="relative">

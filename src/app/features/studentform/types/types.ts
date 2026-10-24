@@ -50,6 +50,7 @@ export interface StudentDTO {
   libraryNo?: string;
   house?: string;
   grade?: string;
+  gender?: 'BOY' | 'GIRL' | null;
 
   studentActiveMonitor?: StudentMonitor;
 

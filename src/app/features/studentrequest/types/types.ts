@@ -5,6 +5,12 @@ export interface StudentRequest {
   nameWithInitials?: string;
   dob?: string;
   grade?: string;
+  gender?: 'BOY' | 'GIRL' | null;
+  indexNo?: string;
+  libraryNo?: string;
+  house?: string;
+  registrationDate?: string;
+  studentActiveMonitor?: string;
   address?: string;
   phone?: string;
   phone1?: string;

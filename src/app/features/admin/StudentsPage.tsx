@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale } from "next-intl";
-import * as XLSX from "xlsx";
+import * as XLSX from "xlsx-js-style";
 import { fetchCurrentUser } from "../auth/api/authApi";
 import { getUserRole } from "../../../lib/authUtils";
 import { useStudents } from "../students/hooks/useStudents";
@@ -27,12 +27,6 @@ function formatDate(value?: string | null): string {
 function formatYesNo(value: unknown): string {
   if (value === true || value === "YES") return "Yes";
   if (value === false || value === "NO") return "No";
-  return "";
-}
-
-function formatBoolean(value: unknown): string {
-  if (value === true) return "Yes";
-  if (value === false) return "No";
   return "";
 }
 
@@ -68,7 +62,6 @@ function formatSiblings(value: unknown): string {
 }
 
 const studentExportColumns: ExportColumn[] = [
-  { header: "ID", value: (student) => student.id ?? "" },
   { header: "Full Name With Surname", value: (student) => student.fullNameWithSurname ?? "" },
   { header: "Name With Initials", value: (student) => student.nameWithInitials ?? "" },
   { header: "Date of Birth", value: (student) => formatDate(student.dob) },
@@ -101,10 +94,9 @@ const studentExportColumns: ExportColumn[] = [
   { header: "Library No", value: (student) => student.libraryNo ?? "" },
   { header: "House", value: (student) => student.house ?? "" },
   { header: "Grade", value: (student) => student.grade ?? "" },
+  { header: "Gender", value: (student) => student.gender === 'BOY' ? 'Boy' : student.gender === 'GIRL' ? 'Girl' : '' },
   { header: "Student Active Monitor", value: (student) => student.studentActiveMonitor ?? "" },
   { header: "Siblings", value: (student) => formatSiblings(student.siblings) },
-  { header: "Created At", value: (student) => formatDate(student.createdAt) },
-  { header: "Agree To Terms", value: (student) => formatBoolean(student.agreeToTerms) },
 ];
 
 function buildStudentExportRows(students: StudentDTO[]) {
@@ -190,7 +182,26 @@ export default function StudentsPage() {
     try {
       const students = await fetchAllStudents(filterGrade);
       const rows = buildStudentExportRows(students);
-      const worksheet = XLSX.utils.json_to_sheet(rows);
+      const headers = studentExportColumns.map(({ header }) => header);
+      const values = rows.map((row) => headers.map((header) => row[header]));
+      const worksheet = XLSX.utils.aoa_to_sheet([[`Grade ${filterGrade} — Student Details`], [`${students.length} students`], [], headers, ...values]);
+      const lastColumn = XLSX.utils.encode_col(headers.length - 1);
+      worksheet['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: headers.length - 1 } }, { s: { r: 1, c: 0 }, e: { r: 1, c: headers.length - 1 } }];
+      worksheet['!autofilter'] = { ref: `A4:${lastColumn}${students.length + 4}` };
+      const widths = headers.map((header) => /Address|Reason|Siblings/.test(header) ? 42 : Math.min(32, Math.max(18, header.length + 3)));
+      worksheet['!cols'] = widths.map((wch) => ({ wch }));
+      worksheet['!rows'] = [{ hpt: 36 }, { hpt: 26 }, { hpt: 10 }, { hpt: 36 }, ...values.map((row) => ({ hpt: Math.min(150, Math.max(34, Math.ceil(Math.max(...row.map((value, index) => String(value).length / widths[index]))) * 16 + 12)) }))];
+      const blue = '2563EB', pale = 'EFF6FF', line = 'E2E8F0';
+      worksheet.A1.s = { fill: { fgColor: { rgb: blue } }, font: { bold: true, sz: 18, color: { rgb: 'FFFFFF' } }, alignment: { vertical: 'center' } };
+      worksheet.A2.s = { fill: { fgColor: { rgb: pale } }, font: { bold: true, color: { rgb: '1E40AF' } }, alignment: { vertical: 'center' } };
+      for (let col = 1; col < headers.length; col++) for (const row of [0, 1]) {
+        worksheet[XLSX.utils.encode_cell({ r: row, c: col })] = { t: 's', v: '', s: row === 0 ? worksheet.A1.s : worksheet.A2.s };
+      }
+      for (let row = 3; row < values.length + 4; row++) for (let col = 0; col < headers.length; col++) {
+        const address = XLSX.utils.encode_cell({ r: row, c: col });
+        const cell = worksheet[address] ||= { t: 's', v: '' };
+        cell.s = { fill: { fgColor: { rgb: row === 3 ? blue : row % 2 ? 'FFFFFF' : 'F8FAFC' } }, font: { bold: row === 3, color: { rgb: row === 3 ? 'FFFFFF' : '0F172A' } }, alignment: { vertical: 'center', wrapText: true }, border: { bottom: { style: 'thin', color: { rgb: line } } } };
+      }
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, `Grade ${filterGrade}`);
 
@@ -208,21 +219,21 @@ export default function StudentsPage() {
   if (!isAuthenticated) return null;
 
   return (
-    <main className="min-h-screen bg-slate-50 flex-1 ml-0 md:ml-64 p-4 md:p-8 pt-20 md:pt-12">
-      <div className="max-w-6xl mx-auto space-y-8">
+    <main className="admin-workspace min-h-screen bg-slate-50 flex-1 ml-0 md:ml-64 p-4 md:p-8 pt-20 md:pt-12">
+      <div className="max-w-6xl mx-auto space-y-6">
         
         {/* Header with Stats & Actions */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white p-8 rounded-3xl shadow-sm border border-slate-200 animate-in fade-in slide-in-from-top-4 duration-500">
+        <div className="flex flex-col gap-5 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:flex-row md:items-center md:justify-between md:p-8">
             <div>
                 <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Student Directory</h1>
                 <p className="text-slate-500 mt-1 font-medium">Manage and view all registered students</p>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               {filterGrade && (
                 <button
                   onClick={handleExportExcel}
                   disabled={isExporting || loading}
-                  className="flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-2xl font-bold hover:bg-emerald-700 transition-all shadow-md hover:shadow-lg active:scale-95 border border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <svg className={`w-5 h-5 ${isExporting ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 3v12m0 0l-4-4m4 4l4-4m-6 8h8"></path>
@@ -232,7 +243,7 @@ export default function StudentsPage() {
               )}
                 <button
                     onClick={() => setShowPromoteConfirm(true)}
-                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-2xl font-bold hover:from-red-600 hover:to-orange-600 transition-all shadow-md hover:shadow-lg active:scale-95 border border-transparent"
+                    className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                 >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
@@ -241,7 +252,7 @@ export default function StudentsPage() {
                 </button>
                 <button
                     onClick={() => refetch()}
-                    className="flex items-center gap-2 px-6 py-3 bg-slate-50 text-slate-700 rounded-2xl font-bold hover:bg-slate-100 transition-all border border-slate-200 active:scale-95"
+                    className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                 >
                     <svg className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
@@ -252,7 +263,7 @@ export default function StudentsPage() {
         </div>
 
         {/* Integrated Filter Bar */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 bg-white p-4 rounded-3xl shadow-sm border border-slate-200 sticky top-4 z-20 backdrop-blur-md bg-white/90">
+        <div className="grid grid-cols-1 gap-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:grid-cols-12">
             <div className="md:col-span-4 relative group">
                 <label className="absolute left-4 -top-2.5 px-2 bg-white text-[10px] font-bold text-blue-600 uppercase tracking-widest z-10">Select Grade</label>
                 <div className="relative">
@@ -352,7 +363,7 @@ export default function StudentsPage() {
                             {data.map((student) => (
                                 <div 
                                     key={student.id} 
-                                    className="group bg-white rounded-3xl border border-slate-200 shadow-sm hover:shadow-xl hover:shadow-blue-500/10 hover:border-blue-200 transition-all duration-300 p-6 flex flex-col justify-between animate-in fade-in slide-in-from-bottom-4"
+                                    className="group flex flex-col justify-between rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-200 hover:border-blue-200 hover:shadow-md"
                                 >
                                     <div className="flex items-start justify-between mb-4">
                                         <div className="flex items-center gap-4">
@@ -381,24 +392,25 @@ export default function StudentsPage() {
                                         </div>
                                     </div>
 
-                                    <div className="space-y-2.5 mb-6">
-                                        <div className="flex items-center gap-3 text-slate-600">
+                                    <div className="mb-5 grid grid-cols-2 gap-3 border-t border-slate-100 pt-5 text-sm">
+                                        <div className="col-span-2 flex items-center gap-3 text-slate-600">
                                             <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
                                             </svg>
-                                            <span className="text-xs font-bold">{student.phone1 || 'No Phone'}</span>
+                                            <span className="truncate text-xs font-semibold">{student.phone1 || 'No phone recorded'}</span>
                                         </div>
-                                        <div className="flex items-center gap-3 text-slate-600">
+                                        <div className="text-xs font-semibold text-slate-600">Gender<br /><span className="mt-1 inline-block text-sm text-slate-900">{student.gender === 'GIRL' ? 'Girl' : student.gender === 'BOY' ? 'Boy' : 'Not recorded'}</span></div>
+                                        <div className="flex items-center gap-2 text-slate-600">
                                             <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                                             </svg>
-                                            <span className="text-xs font-bold">{student.dob ? new Date(student.dob).toLocaleDateString() : 'N/A'}</span>
+                                            <span className="text-xs font-semibold">{student.dob ? new Date(student.dob).toLocaleDateString() : 'N/A'}</span>
                                         </div>
                                     </div>
 
                                     <button
                                         onClick={() => setSelectedStudent(student)}
-                                        className="w-full py-3 bg-blue-50 text-blue-600 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all active:scale-[0.98] border border-blue-100 hover:border-blue-600 shadow-sm"
+                                        className="w-full rounded-xl border border-blue-100 bg-blue-50 py-3 text-sm font-semibold text-blue-700 transition hover:border-blue-600 hover:bg-blue-600 hover:text-white"
                                     >
                                         View Profile
                                     </button>

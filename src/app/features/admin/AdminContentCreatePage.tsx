@@ -168,7 +168,7 @@ export default function AdminContentCreatePage({
   if (!isAuthenticated) return null;
 
   return (
-    <main className="min-h-screen bg-slate-50 flex-1 ml-0 md:ml-64 p-4 md:p-8 pt-20 md:pt-12">
+    <main className="admin-workspace min-h-screen bg-slate-50 flex-1 ml-0 md:ml-64 p-4 md:p-8 pt-20 md:pt-12">
       <div className="max-w-4xl mx-auto w-full space-y-6">
         <div className="rounded-4xl border border-slate-200 bg-white p-6 md:p-8 shadow-sm overflow-hidden relative">
           <div className={`absolute inset-x-0 top-0 h-1 ${accentClassName}`} />

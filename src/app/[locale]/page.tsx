@@ -3,11 +3,12 @@
 import HeroCarousel from "../features/home/HeroCarousel";
 import Hero from "../features/home/Hero";
 import dynamic from "next/dynamic";
+import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import NewsSection from "../features/home/news/NewsSection";
 import EventsSection from "../features/home/events/EventsSection";
 import DeferredHomeSection from "../features/home/DeferredHomeSection";
-import { getUserRole } from "../../lib/authUtils";
+import { fetchCurrentUser } from "../features/auth/api/authApi";
 
 const HomeHighlightsSection = dynamic(() => import("../features/home/HomeHighlightsSection"), {
   ssr: false,
@@ -20,8 +21,23 @@ const YouTubeVideos = dynamic(() => import("../features/home/YouTubeVideos"), {
 
 export default function LocalePage() {
   const t = useTranslations();
-  const userRole = getUserRole();
-  const hideStudentHomeSections = userRole === "ADMIN" || userRole === "TEACHER";
+  const [hideStudentHomeSections, setHideStudentHomeSections] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+
+    fetchCurrentUser()
+      .then((user) => {
+        if (!active) return;
+        const role = String(user?.role || user?.Role || "").toUpperCase();
+        setHideStudentHomeSections(role === "ADMIN" || role === "TEACHER");
+      })
+      .catch(() => {
+        if (active) setHideStudentHomeSections(false);
+      });
+
+    return () => { active = false; };
+  }, []);
 
   return (
     <div className="flex flex-col min-h-screen items-center justify-start bg-white font-sans">

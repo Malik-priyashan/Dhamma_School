@@ -1,4 +1,5 @@
 import { StudentDTO } from "../../studentform/types/types";
+import { StudentRequest } from "../types/types";
 import { fetchWithAuth } from "../../auth/api/authApi";
 
 const STUDENT_REQUEST_PROXY_BASE = '/api/proxy/student-request';
@@ -42,7 +43,7 @@ export async function fetchAllStudentRequests(
   return res.json();
 }
 
-export async function acceptStudentRequest(id: string): Promise<any> {
+export async function acceptStudentRequest(id: string, details: StudentRequest): Promise<any> {
   const url = studentRequestApi(`/${id}/accept`);
 
   const res = await fetchWithAuth(url, {
@@ -50,6 +51,9 @@ export async function acceptStudentRequest(id: string): Promise<any> {
     credentials: 'include',
     cache: 'no-store',
     headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ gender: details.gender, grade: details.grade, indexNo: details.indexNo,
+      libraryNo: details.libraryNo, house: details.house, registrationDate: details.registrationDate,
+      studentActiveMonitor: details.studentActiveMonitor }),
   });
 
   if (!res.ok) {
