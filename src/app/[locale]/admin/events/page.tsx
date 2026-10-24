@@ -6,8 +6,8 @@ export default function EventsAdminPage() {
       title="Events"
       description="Review, add, edit, and delete school events from one admin screen. The table shows the topic, image, and date for each record."
       endpoint="/events"
-      accentClassName="bg-gradient-to-r from-sky-500 via-blue-500 to-cyan-500"
-      accentLabel="bg-sky-50 text-sky-700"
+      accentClassName="bg-blue-600"
+      accentLabel="bg-blue-50 text-blue-700"
       addButtonLabel="Add Event"
     />
   );

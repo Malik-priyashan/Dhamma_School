@@ -25,6 +25,28 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/* Shared admin layout and controls. Keep these scoped away from the public site. */
+.admin-workspace { background: #f4f7fb; color: #0f172a; }
+.admin-workspace > div { width: 100%; }
+.admin-workspace table { min-width: 640px; border-collapse: separate; border-spacing: 0; }
+.admin-workspace thead { background: #f8fafc; }
+.admin-workspace th { color: #475569; font-size: .72rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
+.admin-workspace td { vertical-align: middle; }
+.admin-workspace tbody tr { transition: background-color 150ms ease; }
+.admin-workspace tbody tr:hover { background: #f8fafc; }
+.admin-workspace input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+.admin-workspace select,
+.admin-workspace textarea { max-width: 100%; min-width: 0; border-color: #cbd5e1; }
+.admin-workspace input:focus-visible,
+.admin-workspace select:focus-visible,
+.admin-workspace textarea:focus-visible,
+.admin-workspace button:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
+.admin-workspace button { cursor: pointer; }
+.admin-workspace button:disabled { cursor: not-allowed; }
+
+.student-profile-card section { border: 1px solid #e2e8f0; border-radius: 1.25rem; background: white; padding: 1.25rem; box-shadow: 0 1px 2px rgb(15 23 42 / .04); }
+@media (min-width: 640px) { .student-profile-card section { padding: 1.75rem; } }
+
 .student-registration-form label > span {
   color: #334155;
   font-weight: 700;

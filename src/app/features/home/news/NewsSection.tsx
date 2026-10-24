@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { fetchHomeNews, HomeNewsApiItem } from "./api/newsApi";
@@ -60,20 +59,12 @@ function LoadingCard({ mode }: { mode: "preview" | "full" | "carousel" }) {
 
   if (mode === "preview") {
     return (
-      <article className="flex min-h-52 gap-4 rounded-3xl bg-white p-3.5 shadow-sm">
-        <div className="relative h-28 w-28 shrink-0 overflow-hidden rounded-2xl bg-black/10 sm:h-40 sm:w-40" />
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="h-4 w-28 rounded-full bg-black/10" />
-            <div className="h-5 w-24 rounded-full bg-black/10" />
-          </div>
-          <div className="mt-2 h-3 w-28 rounded-full bg-black/10" />
-          <div className="mt-3 space-y-2">
-            <div className="h-3 w-full rounded-full bg-black/10" />
-            <div className="h-3 w-5/6 rounded-full bg-black/10" />
-            <div className="h-3 w-2/3 rounded-full bg-black/10" />
-          </div>
-          <div className="mt-4 h-3 w-24 rounded-full bg-black/10" />
+      <article aria-hidden="true" className="grid min-h-36 animate-pulse grid-cols-[104px_minmax(0,1fr)] items-center gap-3 rounded-2xl border border-slate-100 bg-white p-2.5 sm:grid-cols-[132px_minmax(0,1fr)] sm:gap-4">
+        <div className="h-28 w-full rounded-xl bg-slate-100 sm:h-32" />
+        <div className="min-w-0 space-y-2">
+          <div className="h-4 w-5/6 rounded-full bg-slate-100" />
+          <div className="h-3 w-full rounded-full bg-slate-100" />
+          <div className="h-3 w-2/3 rounded-full bg-slate-100" />
         </div>
       </article>
     );
@@ -168,7 +159,6 @@ function buildDetails(item: HomeNewsApiItem, locale: string, title: string, desc
 export default function NewsSection({ mode = "preview" }: NewsSectionProps) {
   const locale = useLocale();
   const t = useTranslations();
-  const router = useRouter();
   const carouselRef = useRef<HTMLDivElement | null>(null);
   const [items, setItems] = useState<HomeContentItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -288,47 +278,21 @@ export default function NewsSection({ mode = "preview" }: NewsSectionProps) {
   };
 
   const renderPreviewCard = (item: HomeContentItem) => (
-    <article
+    <button
       key={item.id}
-      role="button"
-      tabIndex={0}
-      onClick={() => router.push(`/${locale}/news`)}
-      onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          router.push(`/${locale}/news`);
-        }
-      }}
-      className="group flex min-h-52 cursor-pointer gap-4 rounded-3xl bg-white p-3.5 text-left shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_35px_rgba(0,0,0,0.08)] focus:outline-none focus:ring-2 focus:ring-blue-200"
+      type="button"
+      onClick={() => setSelectedItem(item)}
+      className="group grid min-h-36 w-full grid-cols-[104px_minmax(0,1fr)] items-center gap-3 rounded-2xl border border-slate-200 bg-white p-2.5 text-left shadow-sm transition hover:border-sky-200 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600 sm:grid-cols-[132px_minmax(0,1fr)] sm:gap-4"
     >
-      <div className="relative h-28 w-28 shrink-0 overflow-hidden rounded-2xl bg-black/5 sm:h-40 sm:w-40">
-        <img src={item.image} alt={item.title} loading="lazy" decoding="async" className="h-full w-full object-cover transition duration-300 group-hover:scale-105" />
-        <div className="absolute inset-0 bg-black/10" />
+      <div className="h-28 w-full overflow-hidden rounded-xl bg-slate-100 sm:h-32">
+        <img src={item.image} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
       </div>
-
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <h4 className="text-base font-bold text-black sm:text-lg">{item.title}</h4>
-          <span className="rounded-full border border-black/10 bg-black/5 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-[0.2em] text-black/70">
-            {t("news_section_label")}
-          </span>
-        </div>
-        {item.dateLabel && <p className="mt-1 text-sm font-semibold text-black/70">{item.dateLabel}</p>}
-        <p className={`mt-2 text-sm leading-6 text-black/70 ${expandedIds.includes(item.id) ? "" : "line-clamp-3"}`}>
-          {item.description}
-        </p>
-        <button
-          type="button"
-          onClick={(event) => {
-            event.stopPropagation();
-            router.push(`/${locale}/news`);
-          }}
-          className="mt-3 text-sm font-semibold text-blue-600 transition hover:text-blue-700 hover:underline"
-        >
-          {t("see_more")}
-        </button>
+      <div className="flex min-w-0 flex-col justify-center">
+        <h4 className="line-clamp-2 text-sm font-bold leading-snug text-slate-900 sm:text-base">{item.title}</h4>
+        {item.description && <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-600">{item.description}</p>}
+        <span className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-sky-700 group-hover:underline">{t("see_more")} <span aria-hidden="true">→</span></span>
       </div>
-    </article>
+    </button>
   );
 
   if (isCarouselMode) {
@@ -472,7 +436,7 @@ export default function NewsSection({ mode = "preview" }: NewsSectionProps) {
   }
 
   return (
-    <article className="rounded-3xl border border-black/10 bg-white p-5 shadow-[0_18px_50px_rgba(0,0,0,0.06)] sm:p-6">
+      <article className="flex h-full flex-col rounded-3xl border border-sky-100 bg-linear-to-b from-sky-50/80 to-white p-5 shadow-[0_18px_50px_rgba(0,0,0,0.06)] sm:p-6">
       <div className="flex items-center justify-between gap-4">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.3em] text-black/70">{t("news_section_label")}</p>
@@ -493,7 +457,9 @@ export default function NewsSection({ mode = "preview" }: NewsSectionProps) {
         <div className="mt-5 space-y-4">
           {loading
             ? Array.from({ length: 3 }).map((_, index) => <LoadingCard key={`news-preview-stack-loading-${index}`} mode="preview" />)
-            : visibleItems.map(renderPreviewCard)}
+            : visibleItems.length
+              ? visibleItems.map(renderPreviewCard)
+              : !error && <p className="rounded-2xl border border-dashed border-sky-200 bg-white px-5 py-8 text-sm text-slate-600">{t("news_section_empty")}</p>}
         </div>
       ) : (
         <>
@@ -564,11 +530,11 @@ export default function NewsSection({ mode = "preview" }: NewsSectionProps) {
         </>
       )}
 
-      {mode !== "preview" && <NewsDetailsModal item={selectedItem} onClose={() => setSelectedItem(null)} />}
+      <NewsDetailsModal item={selectedItem} onClose={() => setSelectedItem(null)} />
 
       {mode === "preview" && (
-        <div className="mt-5 flex justify-end">
-          <Link href={`/${locale}/news`} className="rounded-full border border-black px-4 py-2 text-sm font-semibold text-black transition hover:bg-black hover:text-white">
+        <div className="mt-auto flex justify-end pt-5">
+          <Link href={`/${locale}/news`} className="rounded-full border border-sky-200 bg-white px-4 py-2 text-sm font-semibold text-sky-800 transition hover:border-sky-700 hover:bg-sky-700 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600">
             {t("news_section_all")}
           </Link>
         </div>

@@ -130,14 +130,13 @@ export default function AnnouncingAdminPage() {
   if (!isAuthenticated) return null;
 
   return (
-    <main className="min-h-screen bg-slate-50 flex-1 ml-0 md:ml-64 p-4 md:p-8 pt-20 md:pt-12">
+    <main className="admin-workspace min-h-screen bg-slate-50 flex-1 ml-0 md:ml-64 p-4 md:p-8 pt-20 md:pt-12">
       <div className="max-w-6xl mx-auto space-y-6">
         
         {/* Header Section */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between md:p-8">
           <div>
-            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight border-b border-slate-200 pb-4 flex items-center gap-3">
-              <span className="w-2.5 h-8 bg-blue-600 rounded-md"></span>
+            <h1 className="text-3xl font-bold tracking-tight text-slate-900">
               Announcing Applications
             </h1>
             <p className="text-slate-500 mt-2">
@@ -147,7 +146,7 @@ export default function AnnouncingAdminPage() {
           <div className="flex items-center gap-3 shrink-0">
             <button
               onClick={() => loadAnnouncing()}
-              className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg shadow-blue-600/10 font-bold transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 text-sm"
+              className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
             >
               Refresh Data
             </button>
@@ -155,7 +154,7 @@ export default function AnnouncingAdminPage() {
         </div>
 
         {/* Filters/Search Bar card */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-150 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
+        <div className="flex flex-col items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:flex-row">
           <div className="w-full md:w-1/2 relative">
             <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -207,7 +206,7 @@ export default function AnnouncingAdminPage() {
 
         {/* Announcing List Table */}
         {!loading && !error && announcingList.length === 0 && (
-          <div className="bg-white p-16 rounded-3xl shadow-sm border border-slate-150 text-center space-y-3">
+          <div className="space-y-3 rounded-3xl border border-slate-200 bg-white p-10 text-center shadow-sm sm:p-16">
             <div className="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto">
               <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0a2 2 0 01-2 2H6a2 2 0 01-2-2m16 0V9a2 2 0 00-2-2H6a2 2 0 00-2 2v2m4 4h4m-6 4h6"></path>
@@ -220,7 +219,7 @@ export default function AnnouncingAdminPage() {
 
         {!loading && !error && announcingList.length > 0 && (
           <>
-            <div className="overflow-hidden bg-white rounded-3xl border border-slate-150 shadow-sm transition-all duration-200">
+            <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
@@ -268,7 +267,7 @@ export default function AnnouncingAdminPage() {
 
             {/* Pagination Controls */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-between border border-slate-150 bg-white px-6 py-4.5 rounded-3xl shadow-sm mt-4">
+              <div className="mt-4 flex items-center justify-between rounded-3xl border border-slate-200 bg-white px-6 py-4 shadow-sm">
                 <div className="flex flex-1 justify-between sm:hidden">
                   <button
                     onClick={() => loadAnnouncing(undefined, currentPage - 1)}

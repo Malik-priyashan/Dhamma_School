@@ -44,9 +44,9 @@ export default function RegistrationPaymentPage() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-50 flex-1 ml-0 md:ml-64 p-4 md:p-8 pt-20 md:pt-12">
+    <main className="admin-workspace min-h-screen bg-slate-50 flex-1 ml-0 md:ml-64 p-4 md:p-8 pt-20 md:pt-12">
       <div className="max-w-4xl mx-auto w-full">
-        <div className="mb-8 flex items-center justify-between">
+        <div className="mb-6 flex items-center justify-between rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
         <div>
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Registration Payment</h1>
           <p className="text-slate-500 mt-2 text-sm md:text-base">Configure the registration fee requirement for new student applications.</p>
@@ -58,7 +58,7 @@ export default function RegistrationPaymentPage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+      <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
         <div className="p-6 md:p-8">
           <form onSubmit={handleSubmit} className="space-y-6 max-w-lg">
             <div className="space-y-2">

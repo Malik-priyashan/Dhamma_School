@@ -105,19 +105,19 @@ export default function TeachersPage() {
   if (!isAuthenticated) return null;
 
   return (
-    <main className="min-h-screen bg-slate-50 flex-1 ml-0 md:ml-64 p-4 md:p-8 pt-20 md:pt-12">
+    <main className="admin-workspace min-h-screen bg-slate-50 flex-1 ml-0 md:ml-64 p-4 md:p-8 pt-20 md:pt-12">
       <div className="max-w-6xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between md:p-8">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900 border-b border-slate-200 pb-4">
+            <h1 className="text-3xl font-bold tracking-tight text-slate-900">
               Teacher Management
             </h1>
-            <p className="text-slate-600">Review and manage teacher account approvals.</p>
+            <p className="mt-2 text-sm text-slate-500">Review and manage teacher account approvals.</p>
           </div>
           <div>
             <button
               onClick={loadTeachers}
-              className="px-4 py-2 bg-blue-600 text-white rounded-xl shadow-md hover:bg-blue-700 transition-all font-medium"
+              className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
             >
               Refresh
             </button>
@@ -134,7 +134,7 @@ export default function TeachersPage() {
         )}
 
         {!loading && teachers.length > 0 && (
-          <div className="overflow-hidden bg-white rounded-2xl shadow-xl border border-slate-200">
+          <div className="overflow-x-auto rounded-3xl border border-slate-200 bg-white shadow-sm">
             <table className="w-full text-left">
               <thead className="bg-slate-50 border-b border-slate-200">
                 <tr>
@@ -164,25 +164,23 @@ export default function TeachersPage() {
                         {teacher.isActive ? 'Active' : 'Pending'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 flex gap-3 justify-center">
-                      <button
-                        onClick={() => handleToggleStatus(teacher.id, teacher.isActive)}
-                        disabled={processingId === teacher.id}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                          teacher.isActive
-                            ? 'bg-amber-50 text-amber-600 hover:bg-amber-100'
-                            : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
-                        } disabled:opacity-50`}
-                      >
-                        {teacher.isActive ? 'Deactivate' : 'Approve'}
-                      </button>
-                      <button
-                        onClick={() => handleDelete(teacher.id)}
-                        disabled={processingId === teacher.id}
-                        className="px-4 py-2 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg text-sm font-medium transition-all disabled:opacity-50"
-                      >
-                        Delete
-                      </button>
+                    <td className="px-6 py-4 text-center whitespace-nowrap">
+                      <div className="inline-flex items-center gap-2">
+                        <button
+                          onClick={() => handleToggleStatus(teacher.id, teacher.isActive)}
+                          disabled={processingId === teacher.id}
+                          className={`rounded-lg px-4 py-2 text-sm font-medium transition-all disabled:opacity-50 ${teacher.isActive ? 'bg-slate-100 text-slate-700 hover:bg-slate-200' : 'bg-blue-50 text-blue-700 hover:bg-blue-100'}`}
+                        >
+                          {teacher.isActive ? 'Deactivate' : 'Approve'}
+                        </button>
+                        <button
+                          onClick={() => handleDelete(teacher.id)}
+                          disabled={processingId === teacher.id}
+                          className="rounded-lg bg-rose-50 px-4 py-2 text-sm font-medium text-rose-600 transition hover:bg-rose-100 disabled:opacity-50"
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

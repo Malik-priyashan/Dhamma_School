@@ -22,6 +22,7 @@ export default function StudentRequestCard({
     libraryNo: (request?.libraryNo as string) || "",
     house: (request?.house as string) || "",
     grade: (request?.grade as string) || "",
+    gender: request?.gender || null,
     registrationDate: (request?.registrationDate as string) || "",
     registrationPayment: (request?.registrationPayment as string) || "",
     studentActiveMonitor: (request?.studentActiveMonitor as string) || "NOT_GIVEN",
@@ -37,6 +38,7 @@ export default function StudentRequestCard({
           libraryNo: (request as any).libraryNo || "",
           house: (request as any).house || "",
           grade: (request as any).grade || "",
+          gender: request.gender || null,
           registrationDate: (request as any).registrationDate || "",
           registrationPayment: (request as any).registrationPayment || "",
           studentActiveMonitor: (request as any).studentActiveMonitor || "NOT_GIVEN",
@@ -349,6 +351,18 @@ export default function StudentRequestCard({
                           </select>
                         </div>
                         <div className="flex flex-col">
+                          <label className="mb-2 text-sm font-semibold text-slate-700">Gender</label>
+                          <div role="group" aria-label="Gender" className="flex rounded-lg border border-slate-300 p-1">
+                            {(['GIRL', 'BOY'] as const).map((gender) => (
+                              <button key={gender} type="button" aria-pressed={adminDetails.gender === gender}
+                                onClick={() => setAdminDetails((current) => ({ ...current, gender }))}
+                                className={`flex-1 rounded-md p-2 text-sm font-semibold ${adminDetails.gender === gender ? 'bg-blue-600 text-white' : 'text-slate-600'}`}>
+                                {gender === 'GIRL' ? 'G · Girl' : 'B · Boy'}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="flex flex-col">
                           <label className="mb-2 text-sm font-semibold text-slate-700">Registration Date</label>
                           <input type="date" name="registrationDate" value={adminDetails.registrationDate} onChange={handleAdminDetailsChange} className="w-full rounded-lg border border-slate-300 bg-white p-3 text-sm text-slate-900 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 focus:outline-none" />
                         </div>
@@ -369,6 +383,7 @@ export default function StudentRequestCard({
                             {displayField("Library No", adminSource?.libraryNo ?? studentData?.libraryNo, "libraryNo")}
                             {displayField("House", adminSource?.house ?? studentData?.house, "house")}
                             {displayField("Grade", adminSource?.grade ?? studentData?.grade, "grade")}
+                            {displayField("Gender", adminSource?.gender ?? studentData?.gender, "gender")}
                             {displayField("Registration Date", adminSource?.registrationDate ?? studentData?.registrationDate, "registrationDate")}
                           </>
                         ) : (
