@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import { useTranslations } from "next-intl";
 import { StepProps } from "../types";
 import { useFilePreview } from "../hooks/usePrefectForm";

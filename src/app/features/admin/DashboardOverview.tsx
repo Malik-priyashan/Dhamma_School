@@ -20,6 +20,7 @@ export default function DashboardOverview({ refreshKey = 0 }: { refreshKey?: num
   const max = Math.max(1, ...data.grades.flatMap(({ boys, girls, total }) => [boys, girls, total - boys - girls]));
   const boys = data.grades.reduce((sum, grade) => sum + grade.boys, 0);
   const girls = data.grades.reduce((sum, grade) => sum + grade.girls, 0);
+  const gradeCounts = data.grades.find(({ grade }) => grade === selectedGrade);
   const cards = [
     { label: 'Teachers', count: data.teachers.length, detail: 'Registered accounts', letter: 'T' },
     { label: 'Approved prefects', count: data.prefects, detail: 'Selected students', letter: 'P' },
@@ -44,7 +45,11 @@ export default function DashboardOverview({ refreshKey = 0 }: { refreshKey?: num
           className="relative mt-3 w-full rounded-xl border border-blue-200 bg-white px-3 py-2 text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-blue-200">
           {data.grades.map(({ grade }) => <option key={grade} value={grade}>Grade {grade}</option>)}
         </select>
-        <div className="relative mt-3 flex items-end justify-between"><p aria-live="polite" className="text-4xl font-black tracking-tight">{data.grades.find(({ grade }) => grade === selectedGrade)?.total ?? 0}</p><p className="pb-1 text-xs font-medium text-slate-500">enrolled students</p></div>
+        <div className="relative mt-3 flex items-end justify-between"><p aria-live="polite" className="text-4xl font-black tracking-tight">{gradeCounts?.total ?? 0}</p><p className="pb-1 text-xs font-medium text-slate-500">enrolled students</p></div>
+        <div aria-live="polite" className="relative mt-3 grid grid-cols-2 gap-2 border-t border-blue-200 pt-3 text-sm font-semibold">
+          <span className="flex items-center justify-between rounded-xl bg-white px-3 py-2 text-blue-700">Boys <strong>{gradeCounts?.boys ?? 0}</strong></span>
+          <span className="flex items-center justify-between rounded-xl bg-white px-3 py-2 text-pink-700">Girls <strong>{gradeCounts?.girls ?? 0}</strong></span>
+        </div>
       </div>
       {cards.map(({ label, count, detail, letter }) => <div key={label} className="flex min-h-48 flex-col justify-between rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
         <div className="flex items-start justify-between gap-3"><p className="text-sm font-semibold text-slate-500">{label}</p><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-sm font-black text-slate-700">{letter}</span></div>

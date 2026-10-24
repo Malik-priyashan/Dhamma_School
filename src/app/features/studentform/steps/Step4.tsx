@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { StepProps } from "../types/types";
 import { useTranslations } from "next-intl";
 import { getLatestRegistrationPaymentAmount } from "../api/studentRequestApi";

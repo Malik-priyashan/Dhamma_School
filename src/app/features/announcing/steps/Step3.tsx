@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import { StepProps } from "../types/types";
 import { useTranslations } from "next-intl";
 
