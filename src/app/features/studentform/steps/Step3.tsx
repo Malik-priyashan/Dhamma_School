@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import { StepProps, YesNo } from "../types/types";
 import { useTranslations } from "next-intl";
 import { useSiblings } from "../hooks/useStudentForm";

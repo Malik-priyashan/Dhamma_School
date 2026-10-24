@@ -103,6 +103,7 @@ async function proxyRequest(req: NextRequest, _params: { path: string[] }) {
         headers,
         body: requestBody,
         redirect: 'manual',
+        ...(['notifications', 'contact-us'].includes(pathSegments[0]) ? { cache: 'no-store' as RequestCache } : {}),
       });
 
       response = attempted;
@@ -123,7 +124,7 @@ async function proxyRequest(req: NextRequest, _params: { path: string[] }) {
     proxyHeaders.delete('content-length');
     proxyHeaders.delete('transfer-encoding');
     proxyHeaders.delete('connection');
-    if (['auth', 'marks', 'student', 'student-request', 'prefect', 'announcing', 'contact-us', 'users'].includes(pathSegments[0])) {
+    if (['auth', 'marks', 'student', 'student-request', 'prefect', 'announcing', 'contact-us', 'notifications', 'users'].includes(pathSegments[0])) {
       proxyHeaders.set('Cache-Control', 'private, no-store');
     }
     

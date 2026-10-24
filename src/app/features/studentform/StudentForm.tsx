@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import { useStudentForm } from "./hooks/useStudentForm";
 import Step1 from "./steps/Step1";
 import Step2 from "./steps/Step2";

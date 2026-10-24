@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import { useAnnouncingForm, useAnnouncingFormUI } from "./hooks/useAnnouncingForm";
 import Step1 from "./steps/Step1";
 import Step2 from "./steps/Step2";

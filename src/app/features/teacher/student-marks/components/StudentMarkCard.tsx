@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { StudentDTO } from "../../../studentform/types/types";
 import { fetchMarksByStudentAndYear, createMark, updateMark } from "../api/marksApi";
 import { MarkDTO } from "../types/marks.types";

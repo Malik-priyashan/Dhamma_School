@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { StepProps } from "../types/types";
 import { useTranslations } from "next-intl";
 

@@ -1,13 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { fetchCurrentUser } from "../../features/auth/api/authApi";
 import { fetchContactUsMessagesByUser, submitContactUsMessage } from "../../features/contact/api/contactapi";
 import { fetchMyStudents } from "../../features/students/api/studentsApi";
 
-const CONTACT_CHAT_STORAGE_KEY_PREFIX = "dhamma_school_contact_chat_v2";
 const CONTACT_CHAT_ECHO_MATCH_WINDOW_MS = 2 * 60 * 1000;
 
 type ChatMessage = {
@@ -29,13 +28,6 @@ type CurrentUser = {
   fullName?: string;
   name?: string;
   email?: string;
-};
-
-type StoredChatState = {
-  chatName?: string;
-  nameInput?: string;
-  messageInput?: string;
-  messages?: ChatMessage[];
 };
 
 function toText(value: unknown): string {
@@ -86,22 +78,19 @@ function isLocallyCreatedUserMessage(message: ChatMessage): boolean {
   return message.sender === "user" && Boolean(message.clientMessageId) && message.id === message.clientMessageId;
 }
 
-function shouldPersistMessageLocally(message: ChatMessage): boolean {
-  // Once a student message is confirmed, remote history becomes its source of truth.
-  // Keeping the optimistic copy in localStorage can show it again after logout/login.
-  return !isLocallyCreatedUserMessage(message) || message.status !== "sent";
-}
-
 function isSameMessageDelivery(first: ChatMessage, second: ChatMessage): boolean {
-  if (first.clientMessageId && first.clientMessageId === second.clientMessageId) return true;
   if (first.id && first.id === second.id) return true;
+  if (first.sender !== second.sender || first.text.trim() !== second.text.trim()) return false;
+  if (
+    first.clientMessageId &&
+    first.clientMessageId === second.clientMessageId &&
+    (isLocallyCreatedUserMessage(first) || isLocallyCreatedUserMessage(second))
+  ) return true;
 
   const firstCreatedAt = first.createdAt || first.timestamp;
   const secondCreatedAt = second.createdAt || second.timestamp;
 
   if (
-    first.sender !== second.sender ||
-    first.text.trim() !== second.text.trim() ||
     (!isLocallyCreatedUserMessage(first) && !isLocallyCreatedUserMessage(second))
   ) {
     return false;
@@ -142,31 +131,6 @@ function dedupeMessages(messages: ChatMessage[]): ChatMessage[] {
   }
 
   return deduped;
-}
-
-function getContactStorageKey(userId: string) {
-  return `${CONTACT_CHAT_STORAGE_KEY_PREFIX}:${userId || "guest"}`;
-}
-
-function normalizeStoredMessages(messages: unknown): ChatMessage[] {
-  if (!Array.isArray(messages)) return [];
-
-  const normalized = messages
-    .filter(
-      (msg): msg is ChatMessage =>
-        Boolean(msg) &&
-        typeof (msg as ChatMessage).id === "string" &&
-        typeof (msg as ChatMessage).text === "string" &&
-        ((msg as ChatMessage).sender === "user" || (msg as ChatMessage).sender === "system") &&
-        ((msg as ChatMessage).status === "sending" || (msg as ChatMessage).status === "sent" || (msg as ChatMessage).status === "failed") &&
-        typeof (msg as ChatMessage).timestamp === "string",
-    )
-    .map((msg) => ({
-      ...msg,
-      status: msg.status === "sending" ? "failed" : msg.status,
-    }));
-
-  return dedupeMessages(normalized.filter(shouldPersistMessageLocally));
 }
 
 function getRecordUserId(record: Record<string, unknown>): string {
@@ -297,43 +261,6 @@ function mergeMessages(existing: ChatMessage[], incoming: ChatMessage[]) {
   );
 }
 
-function readStoredChatState(userId: string): StoredChatState | null {
-  if (typeof window === "undefined") return null;
-
-  try {
-    const stored = localStorage.getItem(getContactStorageKey(userId));
-    if (!stored) return null;
-
-    const parsed = JSON.parse(stored) as StoredChatState;
-    return {
-      chatName: typeof parsed.chatName === "string" ? parsed.chatName : "",
-      nameInput: typeof parsed.nameInput === "string" ? parsed.nameInput : "",
-      messageInput: typeof parsed.messageInput === "string" ? parsed.messageInput : "",
-      messages: normalizeStoredMessages(parsed.messages),
-    };
-  } catch {
-    return null;
-  }
-}
-
-function writeStoredChatState(userId: string, state: StoredChatState) {
-  if (typeof window === "undefined") return;
-
-  try {
-    localStorage.setItem(
-      getContactStorageKey(userId),
-      JSON.stringify({
-        chatName: state.chatName || "",
-        nameInput: state.nameInput || "",
-        messageInput: state.messageInput || "",
-        messages: (state.messages || []).filter(shouldPersistMessageLocally),
-      }),
-    );
-  } catch (error) {
-    console.error("Failed to persist contact chat state", error);
-  }
-}
-
 export default function ContactUsPage() {
   const t = useTranslations();
   const locale = useLocale();
@@ -348,18 +275,19 @@ export default function ContactUsPage() {
   const [currentUserName, setCurrentUserName] = useState("");
   const [isUserContextReady, setIsUserContextReady] = useState(false);
   const [isLoadingUserContext, setIsLoadingUserContext] = useState(false);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const hasStartedChat = Boolean(chatName.trim());
   const hasLinkedStudentAccount = studentIds.length > 0;
 
-  const loadUserContext = useCallback(async () => {
+  const loadUserContext = useCallback(async (refresh = false) => {
     if (isLoadingUserContext) {
-      return { userId: currentUserId.trim(), studentIds };
+      return { userId: currentUserId.trim(), userName: currentUserName, studentIds };
     }
 
-    if (isUserContextReady) {
-      return { userId: currentUserId.trim(), studentIds };
+    if (isUserContextReady && !refresh) {
+      return { userId: currentUserId.trim(), userName: currentUserName, studentIds };
     }
 
     setIsLoadingUserContext(true);
@@ -369,6 +297,12 @@ export default function ContactUsPage() {
       const resolvedUserId = toText(user.id ?? user._id ?? user.userId ?? user.userID);
       const resolvedUserName = toText(user.fullName || user.name || user.email);
 
+      if (currentUserId && currentUserId !== resolvedUserId) {
+        setChatName("");
+        setNameInput(resolvedUserName);
+        setMessageInput("");
+        setMessages([]);
+      }
       setCurrentUserId(resolvedUserId);
       setCurrentUserName(resolvedUserName);
 
@@ -383,85 +317,22 @@ export default function ContactUsPage() {
       setStudentIds(ids);
       setIsUserContextReady(true);
 
-      return { userId: resolvedUserId, studentIds: ids };
+      return { userId: resolvedUserId, userName: resolvedUserName, studentIds: ids };
     } catch {
+      setChatName("");
+      setNameInput("");
+      setMessageInput("");
+      setMessages([]);
       setStudentIds([]);
       setCurrentUserId("");
       setCurrentUserName("");
       setIsUserContextReady(true);
 
-      return { userId: "", studentIds: [] };
+      return { userId: "", userName: "", studentIds: [] };
     } finally {
       setIsLoadingUserContext(false);
     }
-  }, [currentUserId, isLoadingUserContext, isUserContextReady, studentIds]);
-
-  useEffect(() => {
-    const storageUserId = currentUserId.trim();
-    const storedState = readStoredChatState(storageUserId);
-
-    if (storedState) {
-      if (storedState.chatName) {
-        setChatName(storedState.chatName);
-        setNameInput(storedState.chatName);
-      } else if (storedState.nameInput) {
-        setNameInput(storedState.nameInput);
-      } else if (currentUserName) {
-        setNameInput(currentUserName);
-      }
-
-      if (storedState.messageInput) {
-        setMessageInput(storedState.messageInput);
-      }
-
-      if ((storedState.messages ?? []).length > 0) {
-        setMessages(storedState.messages ?? []);
-      }
-    } else if (currentUserName) {
-      setNameInput(currentUserName);
-    }
-
-    let isActive = true;
-
-    async function loadRemoteHistory() {
-      if (!storageUserId) return;
-
-      try {
-        const historyPayload = await fetchContactUsMessagesByUser(storageUserId);
-        if (!isActive) return;
-
-        const remoteMessages = normalizeUserMessages(historyPayload, storageUserId);
-        if (remoteMessages.length === 0) {
-          setMessages([]);
-          setChatName("");
-          setNameInput(currentUserName || storedState?.nameInput || "");
-          return;
-        }
-
-        setMessages((currentMessages) => mergeMessages(currentMessages, remoteMessages));
-
-        setChatName((currentChatName) => currentChatName || currentUserName || nameInput || storedState?.nameInput || "");
-        setNameInput((currentNameInput) => currentNameInput || currentUserName || storedState?.nameInput || "");
-      } catch (error) {
-        console.error("Failed to load contact chat history", error);
-      }
-    }
-
-    loadRemoteHistory();
-
-    return () => {
-      isActive = false;
-    }
-  }, [currentUserId, currentUserName]);
-
-  useEffect(() => {
-    writeStoredChatState(currentUserId.trim(), {
-      chatName,
-      nameInput,
-      messageInput,
-      messages,
-    });
-  }, [chatName, currentUserId, messageInput, messages, nameInput]);
+  }, [currentUserId, currentUserName, isLoadingUserContext, isUserContextReady, studentIds]);
 
   const handleSendMessage = async () => {
     const trimmedName = chatName.trim();
@@ -580,11 +451,11 @@ export default function ContactUsPage() {
   };
 
   const handleOpenChat = async () => {
-    if (isLoadingUserContext) {
+    if (isLoadingUserContext || isLoadingHistory) {
       return;
     }
 
-    const context = await loadUserContext();
+    const context = await loadUserContext(true);
 
     if (!context.userId.trim()) {
       router.push(`/${locale}/login`);
@@ -596,7 +467,34 @@ export default function ContactUsPage() {
       return;
     }
 
-    setIsModalOpen(true);
+    setIsLoadingHistory(true);
+    try {
+      const historyPayload = await fetchContactUsMessagesByUser(context.userId);
+      const remoteMessages = normalizeUserMessages(historyPayload, context.userId);
+      // Only an unsent message from this page can survive a history refresh.
+      // Delivered messages and replies must come from the server.
+      setMessages((currentMessages) => mergeMessages(
+        currentMessages.filter((message) => isLocallyCreatedUserMessage(message) && message.status !== "sent"),
+        remoteMessages,
+      ));
+      const switchedUser = Boolean(currentUserId && currentUserId !== context.userId);
+      const displayName = context.userName || (switchedUser ? "" : nameInput);
+      if (remoteMessages.length > 0) {
+        setChatName((currentChatName) => switchedUser ? displayName : currentChatName || displayName);
+      } else {
+        setChatName("");
+      }
+      setNameInput((currentNameInput) => switchedUser ? displayName : currentNameInput || displayName);
+      setSubmitError(null);
+    } catch (error) {
+      console.error("Failed to load contact chat history", error);
+      setMessages([]);
+      setChatName("");
+      setSubmitError("Could not load your messages. Please try again.");
+    } finally {
+      setIsLoadingHistory(false);
+      setIsModalOpen(true);
+    }
   };
 
   const handleCloseModal = () => {
@@ -682,10 +580,10 @@ export default function ContactUsPage() {
                 <button
                   onClick={handleOpenChat}
                   type="button"
-                  disabled={isLoadingUserContext}
+                  disabled={isLoadingUserContext || isLoadingHistory}
                   className="mt-6 inline-flex w-full items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:bg-slate-300"
                 >
-                  {isLoadingUserContext ? "Loading..." : t("contact_us_start_chat")}
+                  {isLoadingUserContext || isLoadingHistory ? "Loading..." : t("contact_us_start_chat")}
                 </button>
               </div>
             </aside>
