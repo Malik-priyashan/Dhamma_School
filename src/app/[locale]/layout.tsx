@@ -4,6 +4,7 @@ import "../globals.css";
 import { NextIntlClientProvider } from "next-intl";
 import Header from "../features/Header";
 import SessionRenewal from "../features/auth/SessionRenewal";
+import SmoothWheelScroll from "../features/SmoothWheelScroll";
 import { getMessages } from "../../i18n";
 import { defaultLocale } from "../../config";
 
@@ -38,6 +39,7 @@ export default async function LocaleLayout({
       <div className={`${geistSans.variable} ${geistMono.variable} h-full antialiased min-h-full flex flex-col`} lang={locale}>
         <Header />
         <SessionRenewal />
+        <SmoothWheelScroll />
         {children}
       </div>
     </NextIntlClientProvider>
