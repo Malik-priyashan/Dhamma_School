@@ -24,7 +24,6 @@ interface CircularGalleryProps extends HTMLAttributes<HTMLDivElement> {
 
 const CircularGallery = React.forwardRef<HTMLDivElement, CircularGalleryProps>(
   ({ items, className, radius = 410, autoRotateSpeed = 0.04, ...props }, ref) => {
-    const [rotation, setRotation] = useState(0);
     const [isInteracting, setIsInteracting] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
     const [isVisible, setIsVisible] = useState(false);
@@ -34,6 +33,9 @@ const CircularGallery = React.forwardRef<HTMLDivElement, CircularGalleryProps>(
     const [dimensions, setDimensions] = useState({ cardWidth: 240, cardHeight: 320, radius: 410 });
 
     const containerRef = useRef<HTMLDivElement>(null);
+    const ringRef = useRef<HTMLDivElement>(null);
+    const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
+    const rotationRef = useRef(0);
     const targetRotationRef = useRef(0);
     const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const interactTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -146,7 +148,8 @@ const CircularGallery = React.forwardRef<HTMLDivElement, CircularGalleryProps>(
     // Animation Loop
     useEffect(() => {
       if (!isVisible || !isPageVisible) return;
-      const autoRotate = () => {
+      let lastCardUpdate = 0;
+      const autoRotate = (time: number) => {
         let nextTarget = targetRotationRef.current;
         if (!isInteracting) {
           nextTarget += autoRotateSpeed;
@@ -161,7 +164,25 @@ const CircularGallery = React.forwardRef<HTMLDivElement, CircularGalleryProps>(
           easing = 0.1; // responsive scroll catchup
         }
 
-        setRotation((current) => current + (targetRotationRef.current - current) * easing);
+        const rotation = rotationRef.current + (targetRotationRef.current - rotationRef.current) * easing;
+        rotationRef.current = rotation;
+        if (ringRef.current) ringRef.current.style.transform = `rotateY(${rotation}deg)`;
+
+        // Animate the existing elements directly so the whole gallery is not
+        // rendered by React on every animation frame.
+        if (time - lastCardUpdate >= 50) {
+          lastCardUpdate = time;
+          const anglePerItem = items.length ? 360 / items.length : 0;
+          cardRefs.current.forEach((card, index) => {
+            if (!card) return;
+            const relativeAngle = (index * anglePerItem + rotation % 360 + 360) % 360;
+            const normalizedAngle = Math.abs(relativeAngle > 180 ? 360 - relativeAngle : relativeAngle);
+            card.style.opacity = String(normalizedAngle > 90
+              ? Math.max(0, 1 - (normalizedAngle - 90) / 35) * 0.8
+              : Math.max(0.15, 1 - normalizedAngle / 90));
+            card.style.pointerEvents = normalizedAngle > 80 ? 'none' : 'auto';
+          });
+        }
         animationFrameRef.current = requestAnimationFrame(autoRotate);
       };
 
@@ -172,7 +193,7 @@ const CircularGallery = React.forwardRef<HTMLDivElement, CircularGalleryProps>(
           cancelAnimationFrame(animationFrameRef.current);
         }
       };
-    }, [isInteracting, autoRotateSpeed, isVisible, isPageVisible]);
+    }, [isInteracting, autoRotateSpeed, isVisible, isPageVisible, items.length]);
 
     // Pointer Interaction Handlers for drag/swipe support
     const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -266,16 +287,15 @@ const CircularGallery = React.forwardRef<HTMLDivElement, CircularGalleryProps>(
         {...props}
       >
         <div
-          className="relative w-full h-full transition-transform duration-75"
+          ref={ringRef}
+          className="relative w-full h-full"
           style={{
-            transform: `rotateY(${rotation}deg)`,
             transformStyle: 'preserve-3d',
           }}
         >
           {items.map((item, i) => {
             const itemAngle = i * anglePerItem;
-            const totalRotation = rotation % 360;
-            const relativeAngle = (itemAngle + totalRotation + 360) % 360;
+            const relativeAngle = (itemAngle + 360) % 360;
             const normalizedAngle = Math.abs(relativeAngle > 180 ? 360 - relativeAngle : relativeAngle);
 
             // Hide back-facing cards cleanly to avoid clutter
@@ -292,6 +312,7 @@ const CircularGallery = React.forwardRef<HTMLDivElement, CircularGalleryProps>(
             return (
               <div
                 key={item.id || `${item.common}-${i}`}
+                ref={(element) => { cardRefs.current[i] = element; }}
                 role="button"
                 aria-label={item.common}
                 tabIndex={0}

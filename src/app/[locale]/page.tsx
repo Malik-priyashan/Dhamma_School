@@ -5,11 +5,17 @@ import Hero from "../features/home/Hero";
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import NewsSection from "../features/home/news/NewsSection";
-import EventsSection from "../features/home/events/EventsSection";
 import DeferredHomeSection from "../features/home/DeferredHomeSection";
 import { fetchCurrentUser } from "../features/auth/api/authApi";
 
+const NewsSection = dynamic(() => import("../features/home/news/NewsSection"), {
+  ssr: false,
+  loading: () => <div className="min-h-[36rem] rounded-3xl bg-sky-50/80" aria-hidden="true" />,
+});
+const EventsSection = dynamic(() => import("../features/home/events/EventsSection"), {
+  ssr: false,
+  loading: () => <div className="min-h-[36rem] rounded-3xl bg-amber-50/80" aria-hidden="true" />,
+});
 const HomeHighlightsSection = dynamic(() => import("../features/home/HomeHighlightsSection"), {
   ssr: false,
   loading: () => <div className="min-h-[23rem] rounded-4xl bg-slate-50 sm:min-h-[30rem] xl:min-h-[70vh]" aria-hidden="true" />,
