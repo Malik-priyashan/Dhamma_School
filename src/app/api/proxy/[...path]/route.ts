@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server';
+import { recaptchaAction, verifyRecaptcha } from '../../../../lib/recaptcha';
 
 const DEFAULT_PRODUCTION_BACKEND_URL = 'https://dhamma-school-be.vercel.app';
 const MAX_PROXY_BODY_BYTES = 8 * 1024 * 1024;
@@ -83,6 +84,22 @@ async function proxyRequest(req: NextRequest, _params: { path: string[] }) {
   const headers = new Headers(req.headers);
   headers.delete('host'); // Let fetch set the correct host header
   headers.delete('connection');
+  const captchaToken = headers.get('x-recaptcha-token') || '';
+  headers.delete('x-recaptcha-token');
+
+  const captchaAction = recaptchaAction(req.method, pathSegments);
+  if (captchaAction) {
+    const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+    const secret = process.env.RECAPTCHA_SECRET_KEY;
+    if (siteKey || secret) {
+      if (!siteKey || !secret) {
+        return Response.json({ message: 'reCAPTCHA is not fully configured.' }, { status: 503 });
+      }
+      if (!await verifyRecaptcha(captchaToken, req.nextUrl.hostname, captchaAction)) {
+        return Response.json({ message: 'reCAPTCHA verification failed. Please try again.' }, { status: 400 });
+      }
+    }
+  }
 
   try {
     const isBodyAllowed = !['GET', 'HEAD'].includes(req.method);

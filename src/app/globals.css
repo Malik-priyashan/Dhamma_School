@@ -118,3 +118,8 @@ body.video-playing header {
   pointer-events: none;
   visibility: hidden;
 }
+
+/* Keep Google's reCAPTCHA v3 badge visible in the bottom-right corner. */
+.grecaptcha-badge {
+  z-index: 100 !important;
+}

@@ -7,6 +7,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { loginUser } from "../../features/auth/api/authApi";
+import { getRecaptchaToken } from "../../features/auth/recaptchaClient";
 import { locales } from "../../../config";
 
 export default function LoginPage() {
@@ -53,7 +54,8 @@ export default function LoginPage() {
 
     try {
       setLoading(true);
-      const res = await loginUser({ email, password }) as any;
+      const captchaToken = await getRecaptchaToken("login");
+      const res = await loginUser({ email, password }, captchaToken) as any;
       console.log("Login response:", res);
 
       if (res?.user?.role) {

@@ -7,6 +7,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { registerUser, sendRegistrationCode, verifyRegistrationCode } from "../../features/auth/api/authApi";
+import { getRecaptchaToken } from "../../features/auth/recaptchaClient";
 import { locales } from "../../../config";
 
 export default function RegisterPage() {
@@ -55,7 +56,8 @@ export default function RegisterPage() {
     }
     try {
       setSendingCode(true);
-      await sendRegistrationCode(email.trim().toLowerCase());
+      const captchaToken = await getRecaptchaToken("registration_email_send");
+      await sendRegistrationCode(email.trim().toLowerCase(), captchaToken);
       setCodeSent(true);
       setCode(Array(6).fill(""));
       setVerificationToken("");
