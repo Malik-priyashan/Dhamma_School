@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { useStudentForm } from "./hooks/useStudentForm";
+import RulesReader from "../../[locale]/rules-and-regulations/RulesReader";
 import Step1 from "./steps/Step1";
 import Step2 from "./steps/Step2";
 import Step3 from "./steps/Step3";
@@ -9,8 +11,9 @@ import { useTranslations } from "next-intl";
 import { useStudentFormUI } from "./hooks/useStudentForm";
 
 export default function StudentForm() {
-  const { data, setField, step, next, prev, submit, reset } = useStudentForm();
+  const { data, setField, step, next, prev, submit, reset, imageRestorePending } = useStudentForm();
   const t = useTranslations();
+  const [showRules, setShowRules] = useState(false);
   const { loading, showConfirm, setShowConfirm, percent, onChange, handleSubmit, validateStepFields, toast, notify } = useStudentFormUI({ step, setFieldAction: setField, submitAction: submit, data });
 
   const doSubmit = async () => {
@@ -37,16 +40,16 @@ export default function StudentForm() {
 
   const steps = [
     t('form.step1'),
-    "Parent's details",
-    "Emergency",
-    "Registration fee and terms",
+    t('form.parentDetails'),
+    t('form.emergencyStep'),
+    t('form.feeAndTermsStep'),
   ];
 
   return (
     <>
       <div className="h-20 sm:h-24" />
 
-      <div className="student-registration-form w-full max-w-5xl mx-auto overflow-hidden rounded-2xl sm:rounded-[2rem] border border-white/80 bg-white/95 shadow-2xl shadow-slate-900/10 ring-1 ring-slate-900/5">
+      <div aria-busy={imageRestorePending} className="student-registration-form w-full max-w-5xl mx-auto overflow-hidden rounded-2xl sm:rounded-[2rem] border border-white/80 bg-white/95 shadow-2xl shadow-slate-900/10 ring-1 ring-slate-900/5">
         <div className="relative border-b border-slate-100 bg-gradient-to-br from-sky-50 via-white to-amber-50 p-4 sm:p-8">
           <div className="relative">
             <div className="mb-3 inline-flex rounded-full bg-sky-100 px-3 py-1 text-xs font-bold uppercase tracking-wider text-sky-800">
@@ -88,7 +91,7 @@ export default function StudentForm() {
           {step === 1 && <Step1 data={data} onChange={onChange} onValidationError={(text) => notify(text, 'error')} />}
           {step === 2 && <Step2 data={data} onChange={onChange} />}
           {step === 3 && <Step3 data={data} onChange={onChange} />}
-          {step === 4 && <Step4 data={data} onChange={onChange} />}
+          {step === 4 && <Step4 data={data} onChange={onChange} onReadRules={() => setShowRules(true)} />}
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-6">
@@ -102,6 +105,7 @@ export default function StudentForm() {
             {step < 4 ? (
               <button
                 onClick={() => { if (validateStepFields(step)) next(); }}
+                disabled={imageRestorePending}
                 className="rounded-full bg-sky-600 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-sky-600/20 transition hover:bg-sky-700 active:scale-95"
               >
                 {t('form.next')}
@@ -110,7 +114,7 @@ export default function StudentForm() {
               <div>
                 <button
                   onClick={() => setShowConfirm(true)}
-                  disabled={loading}
+                  disabled={loading || imageRestorePending}
                   className={`rounded-full px-6 py-2.5 text-sm font-bold shadow-lg transition active:scale-95 ${loading ? 'bg-slate-200 text-slate-500 shadow-none' : 'bg-emerald-600 text-white shadow-emerald-600/20 hover:bg-emerald-700'}`}
                 >
                   {loading ? (t('form.submitting') || 'Submitting...') : t('form.submit')}
@@ -142,6 +146,16 @@ export default function StudentForm() {
         )}
 
       </div>
+
+      {showRules && (
+        <div role="dialog" aria-modal="true" aria-label={t('form.rulesTitle')} className="fixed inset-0 z-[100] overflow-y-auto bg-white">
+          <RulesReader
+            embedded
+            studentName={String(data.nameWithInitials ?? '').trim()}
+            onBack={() => setShowRules(false)}
+          />
+        </div>
+      )}
 
       {/* Toast top-right of the viewport */}
       <div className="pointer-events-none fixed right-3 top-3 z-[9999] w-[calc(100vw-1.5rem)] max-w-xs sm:right-4 sm:top-4">

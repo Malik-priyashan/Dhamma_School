@@ -6,20 +6,30 @@ import { StudentDTO, Sibling } from "../types/types";
 import { submitStudentRequest } from "../api/studentRequestApi";
 import { buildStudentDTO } from "../dto/dto";
 import { CLOUDINARY_CLOUD_NAME, CLOUDINARY_UPLOAD_PRESET } from "../../../../config";
+import { loadDraftStudentImage, saveDraftStudentImage } from "./studentImageDraftStorage";
 
 const MAX_STUDENT_IMAGE_SIZE = 5 * 1024 * 1024;
 const ALLOWED_STUDENT_IMAGE_TYPES = ["image/jpeg", "image/webp"];
+const STORAGE_KEY = 'studentForm:v1';
+
+function saveFormDraft(data: StudentDTO, step: number) {
+  const storedData = { ...data };
+  delete storedData.studentImage;
+  sessionStorage.setItem(STORAGE_KEY, JSON.stringify({
+    data: storedData,
+    step,
+    hasStudentImage: data.studentImage instanceof File,
+  }));
+}
 
 export function useStudentForm(initial?: Partial<StudentDTO>) {
-  const storageKey = 'studentForm:v1';
-
   const [data, setData] = useState<StudentDTO>(() => {
     try {
-      const raw = sessionStorage.getItem(storageKey);
+      const raw = sessionStorage.getItem(STORAGE_KEY);
       const base = { fullNameWithSurname: "", agreeToTerms: false } as Partial<StudentDTO>;
       if (raw) {
         const parsed = JSON.parse(raw);
-        return { ...base, ...(parsed.data ?? {}), ...initial } as StudentDTO;
+        return { ...base, ...(parsed.data ?? {}), ...initial, studentImage: initial?.studentImage ?? null } as StudentDTO;
       }
     } catch {
       // ignore initialization errors
@@ -29,7 +39,7 @@ export function useStudentForm(initial?: Partial<StudentDTO>) {
 
   const [step, setStep] = useState<number>(() => {
     try {
-      const raw = sessionStorage.getItem(storageKey);
+      const raw = sessionStorage.getItem(STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
         return parsed.step ?? 1;
@@ -40,13 +50,53 @@ export function useStudentForm(initial?: Partial<StudentDTO>) {
     return 1;
   });
 
+  const [imageRestorePending, setImageRestorePending] = useState(() => {
+    try {
+      const raw = sessionStorage.getItem(STORAGE_KEY);
+      return raw ? Boolean(JSON.parse(raw).hasStudentImage) : false;
+    } catch {
+      return false;
+    }
+  });
+  const imageChangeVersion = useRef(0);
+
+  useEffect(() => {
+    if (!imageRestorePending) return;
+    let active = true;
+    const versionAtStart = imageChangeVersion.current;
+    loadDraftStudentImage()
+      .then((image) => {
+        if (active && image && imageChangeVersion.current === versionAtStart) {
+          setData((current) => ({ ...current, studentImage: image }));
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (active) setImageRestorePending(false);
+      });
+    return () => { active = false; };
+  }, [imageRestorePending]);
+
+  useEffect(() => {
+    if (data.studentImage instanceof File) {
+      void saveDraftStudentImage(data.studentImage).catch(() => {});
+    }
+  }, [data.studentImage]);
+
   function setField<K extends keyof StudentDTO>(key: K, value: StudentDTO[K]) {
+    if (key === 'studentImage') {
+      imageChangeVersion.current += 1;
+      setImageRestorePending(false);
+      void saveDraftStudentImage(value instanceof File ? value : null).catch(() => {});
+    }
     setData((s) => {
       const next = { ...s, [key]: value } as StudentDTO;
+      if (key === 'earlierSchool' && value === 'NO') {
+        delete next.earlierSchoolReason;
+        delete next.reasonForLeave;
+      }
       try {
-        const raw = sessionStorage.getItem(storageKey);
-        const parsed = raw ? JSON.parse(raw) : {};
-        sessionStorage.setItem(storageKey, JSON.stringify({ ...parsed, data: next, step }));
+        saveFormDraft(next, step);
       } catch {}
       return next;
     });
@@ -56,9 +106,7 @@ export function useStudentForm(initial?: Partial<StudentDTO>) {
     setStep((s) => {
       const next = Math.min(4, s + 1);
       try {
-        const raw = sessionStorage.getItem(storageKey);
-        const parsed = raw ? JSON.parse(raw) : {};
-        sessionStorage.setItem(storageKey, JSON.stringify({ ...parsed, data, step: next }));
+        saveFormDraft(data, next);
       } catch {}
       return next;
     });
@@ -68,9 +116,7 @@ export function useStudentForm(initial?: Partial<StudentDTO>) {
     setStep((s) => {
       const next = Math.max(1, s - 1);
       try {
-        const raw = sessionStorage.getItem(storageKey);
-        const parsed = raw ? JSON.parse(raw) : {};
-        sessionStorage.setItem(storageKey, JSON.stringify({ ...parsed, data, step: next }));
+        saveFormDraft(data, next);
       } catch {}
       return next;
     });
@@ -136,8 +182,9 @@ export function useStudentForm(initial?: Partial<StudentDTO>) {
     try {
       const res = await submitStudentRequest(payload as StudentDTO);
       try {
-        sessionStorage.removeItem(storageKey);
+        sessionStorage.removeItem(STORAGE_KEY);
       } catch {}
+      void saveDraftStudentImage(null).catch(() => {});
       return res;
     } catch (err) {
       console.error("Failed to submit student:", err);
@@ -147,22 +194,22 @@ export function useStudentForm(initial?: Partial<StudentDTO>) {
 
   function reset() {
     try {
-      sessionStorage.removeItem(storageKey);
+      sessionStorage.removeItem(STORAGE_KEY);
     } catch {}
+    void saveDraftStudentImage(null).catch(() => {});
     setData({ fullNameWithSurname: "", studentImage: null, agreeToTerms: false, ...initial } as StudentDTO);
     setStep(1);
   }
 
   // sync storage when data or step change (catch cases not covered above)
   useEffect(() => {
+      if (imageRestorePending) return;
       try {
-        const raw = sessionStorage.getItem(storageKey);
-        const parsed = raw ? JSON.parse(raw) : {};
-        sessionStorage.setItem(storageKey, JSON.stringify({ ...parsed, data, step }));
+        saveFormDraft(data, step);
       } catch {}
-  }, [data, step]);
+  }, [data, step, imageRestorePending]);
 
-  return { data, setField, step, next, prev, submit, setData, reset } as const;
+  return { data, setField, step, next, prev, submit, setData, reset, imageRestorePending } as const;
 }
 
 // UI helpers previously in separate files
@@ -249,12 +296,12 @@ export function useStudentFormUI({ step, setFieldAction, submitAction, data }: {
       const hasSchool = !!String(data.school ?? '').trim();
 
       if (!(image instanceof File)) {
-        notify('Please choose a student profile image.', 'error');
+        notify(t('form.studentImageRequired'), 'error');
         return false;
       }
 
       if (!hasValidImage) {
-        notify('Please choose a JPG or WEBP image under 5 MB. PNG images are not accepted.', 'error');
+        notify(t('form.studentImageInvalid'), 'error');
         return false;
       }
 

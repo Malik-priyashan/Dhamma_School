@@ -33,14 +33,14 @@ export default function Step1({ data, onChange, onValidationError }: StepProps) 
     }
 
     if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
-      onValidationError?.("Please choose a JPG or WEBP image. PNG images are not accepted.");
+      onValidationError?.(t('form.studentImageInvalidType'));
       e.target.value = "";
       onChange('studentImage', null);
       return;
     }
 
     if (file.size > MAX_IMAGE_SIZE) {
-      onValidationError?.("Please choose an image under 5 MB.");
+      onValidationError?.(t('form.studentImageTooLarge'));
       e.target.value = "";
       onChange('studentImage', null);
       return;
@@ -62,17 +62,17 @@ export default function Step1({ data, onChange, onValidationError }: StepProps) 
                 <svg className="mb-2 h-9 w-9 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 16.5V19a2 2 0 002 2h14a2 2 0 002-2v-2.5M7 10l5-5m0 0l5 5m-5-5v12" />
                 </svg>
-                <span className="px-3 text-xs font-black uppercase tracking-wide text-sky-700">Choose image</span>
+                <span className="px-3 text-xs font-black uppercase tracking-wide text-sky-700">{t('form.chooseImage')}</span>
               </div>
             )}
           </div>
           <div className="absolute inset-0 flex items-center justify-center rounded-full bg-slate-950/45 opacity-0 group-hover:opacity-100 transition-opacity">
-            <span className="rounded-full bg-white px-3 py-1.5 text-xs font-black text-sky-700 shadow">Choose image</span>
+            <span className="rounded-full bg-white px-3 py-1.5 text-xs font-black text-sky-700 shadow">{t('form.chooseImage')}</span>
           </div>
         </div>
         <div className="mt-3 text-center">
           <span className="text-sm font-semibold text-sky-700">{t('form.studentImage')}<span className="text-red-500 ml-1">*</span></span>
-          <p className="text-xs text-gray-500 mt-1">JPG or WEBP only. PNG is not accepted. Image must be under 5 MB.</p>
+          <p className="text-xs text-gray-500 mt-1">{t('form.studentImageRequirements')}</p>
         </div>
         <input
           type="file"
@@ -144,22 +144,19 @@ export default function Step1({ data, onChange, onValidationError }: StepProps) 
       </div>
 
       {data.earlierSchool === 'YES' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-4">
           <label className="block">
             <span className="text-sm font-medium text-black">{t('form.earlierSchoolName')}</span>
               <input value={String(data.earlierSchoolReason ?? '')} onChange={(e) => onChange('earlierSchoolReason', e.target.value)} placeholder={t('form.earlierSchoolName')}
                 className="mt-1 block w-full rounded-lg border border-black px-3 py-3 shadow-sm bg-white text-black" />
           </label>
+          <label className="block">
+            <span className="text-sm font-medium text-black">{t('form.reasonForLeave')}</span>
+            <textarea value={String(data.reasonForLeave ?? '')} onChange={(e) => onChange('reasonForLeave', e.target.value)} placeholder={t('form.reasonForLeave')}
+              className="mt-1 block w-full rounded-lg border border-black px-3 py-3 shadow-sm bg-white text-black" rows={3} />
+          </label>
         </div>
       )}
-
-      <div>
-        <label className="block">
-          <span className="text-sm font-medium text-black">{t('form.reasonForLeave')}</span>
-          <textarea value={String(data.reasonForLeave ?? '')} onChange={(e) => onChange('reasonForLeave', e.target.value)} placeholder={t('form.reasonForLeave')}
-            className="mt-1 block w-full rounded-lg border border-black px-3 py-3 shadow-sm bg-white text-black" rows={3} />
-        </label>
-      </div>
       </div>
     </div>
   );

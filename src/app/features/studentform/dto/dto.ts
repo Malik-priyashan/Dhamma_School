@@ -1,11 +1,18 @@
 import { StudentDTO } from "../types/types";
 
 export function buildStudentDTO(partial: Partial<StudentDTO>): StudentDTO {
-  return {
+  const dto = {
     fullNameWithSurname: partial.fullNameWithSurname ?? '',
     agreeToTerms: partial.agreeToTerms ?? false,
     ...partial,
   } as StudentDTO;
+
+  if (dto.earlierSchool !== 'YES') {
+    delete dto.earlierSchoolReason;
+    delete dto.reasonForLeave;
+  }
+
+  return dto;
 }
 // Minimal normalizer: input is already expected to match current DTO schema.
 export function normalizeDto(input: Record<string, unknown>): Record<string, unknown> {

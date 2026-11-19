@@ -172,7 +172,7 @@ export default function Step2({ data, onChange }: StepProps) {
         {previewUrl && (
           <div className="mt-3">
             { }
-            <img src={previewUrl} alt="preview" className="w-36 h-24 object-cover rounded-md border" />
+            <img src={previewUrl} alt={t('prefect_board_teacherConfirmation_preview')} className="w-36 h-24 object-cover rounded-md border" />
           </div>
         )}
         <input ref={fileInputRef} type="file" accept="image/*" name="teacherConfirmation" required aria-required="true" onChange={(e) => {

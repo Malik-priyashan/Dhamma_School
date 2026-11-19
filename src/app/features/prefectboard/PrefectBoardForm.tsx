@@ -26,8 +26,8 @@ export default function PrefectBoardForm() {
   const steps = [
     t('form.step1'),
     t('prefect_board_step2_title') || 'Additional details',
-    'Agreements',
-    'Library and teacher',
+    t('prefect_board_step3_title'),
+    t('prefect_board_step4_title'),
   ];
 
   const notify = React.useCallback((message: string, type: 'success' | 'error' = 'success') => {
@@ -88,9 +88,9 @@ export default function PrefectBoardForm() {
             try { reset(); } catch {}
           }, async (e) => {
             try { const { getErrorMessage } = await import('../../../lib/errors');
-              notify(getErrorMessage(e), 'error');
+              notify(locale === 'si' ? t('prefect_board_submissionFailed') : getErrorMessage(e), 'error');
             } catch {
-              notify('Submission failed', 'error');
+              notify(t('prefect_board_submissionFailed'), 'error');
             }
           });
     } catch (err) {
@@ -193,9 +193,9 @@ export default function PrefectBoardForm() {
                         try { reset(); } catch {}
                       }, async (e) => {
                         try { const { getErrorMessage } = await import('../../../lib/errors');
-                          notify(getErrorMessage(e) || 'Submission failed', 'error');
+                          notify(locale === 'si' ? t('prefect_board_submissionFailed') : (getErrorMessage(e) || t('prefect_board_submissionFailed')), 'error');
                         } catch {
-                          notify('Submission failed', 'error');
+                          notify(t('prefect_board_submissionFailed'), 'error');
                         }
                       });
                     } catch {

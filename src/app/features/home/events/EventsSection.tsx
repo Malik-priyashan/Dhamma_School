@@ -19,12 +19,12 @@ type EventsSectionProps = {
 function LoadingCard({ mode }: { mode: "preview" | "full" }) {
   if (mode === "preview") {
     return (
-      <div aria-hidden="true" className="grid min-h-36 animate-pulse grid-cols-[104px_minmax(0,1fr)] items-center gap-3 rounded-2xl border border-amber-100 bg-white p-2.5 sm:grid-cols-[132px_minmax(0,1fr)] sm:gap-4">
-        <div className="h-28 w-full rounded-xl bg-amber-50 sm:h-32" />
+      <div aria-hidden="true" className="grid animate-pulse grid-cols-[88px_minmax(0,1fr)] items-center gap-4 border-b border-stone-200/80 py-4 last:border-b-0 sm:grid-cols-[108px_minmax(0,1fr)] sm:gap-5">
+        <div className="h-22 w-full rounded-xl bg-stone-200/70 sm:h-26" />
         <div className="min-w-0 space-y-2">
-          <div className="h-4 w-5/6 rounded-full bg-amber-50" />
-          <div className="h-3 w-full rounded-full bg-amber-50" />
-          <div className="h-3 w-2/3 rounded-full bg-amber-50" />
+          <div className="h-4 w-5/6 rounded-full bg-stone-200/70" />
+          <div className="h-3 w-full rounded-full bg-stone-200/70" />
+          <div className="h-3 w-2/3 rounded-full bg-stone-200/70" />
         </div>
       </div>
     );
@@ -127,15 +127,15 @@ export default function EventsSection({ mode = "preview" }: EventsSectionProps) 
         <Link
           key={item.id}
           href={detailsHref}
-          className="group grid min-h-36 grid-cols-[104px_minmax(0,1fr)] items-center gap-3 rounded-2xl border border-amber-100 bg-white p-2.5 text-left shadow-sm transition hover:border-amber-200 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600 sm:grid-cols-[132px_minmax(0,1fr)] sm:gap-4"
+          className="group grid grid-cols-[88px_minmax(0,1fr)] items-center gap-4 border-b border-stone-200/80 py-4 text-left transition-colors last:border-b-0 hover:text-amber-900 focus-visible:rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-800 sm:grid-cols-[108px_minmax(0,1fr)] sm:gap-5"
         >
-          <div className="h-28 w-full overflow-hidden rounded-xl bg-amber-50 sm:h-32">
+          <div className="h-22 w-full overflow-hidden rounded-xl bg-stone-200/70 sm:h-26">
             <img src={item.image} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover transition duration-300 group-hover:scale-105" />
           </div>
           <div className="flex min-w-0 flex-col justify-center">
-            <h4 className="line-clamp-2 text-sm font-bold leading-snug text-slate-900 sm:text-base">{item.title}</h4>
-            {item.description && <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-600">{item.description}</p>}
-            <span className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-amber-800 group-hover:underline">{t("events_section_see_more")} <span aria-hidden="true">→</span></span>
+            <h4 className="line-clamp-2 text-base font-semibold leading-snug text-slate-900 sm:text-lg">{item.title}</h4>
+            {item.description && <p className="mt-1 line-clamp-2 text-sm leading-5 text-slate-600">{item.description}</p>}
+            <span className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-amber-900 group-hover:underline">{t("events_section_see_more")} <span aria-hidden="true">→</span></span>
           </div>
         </Link>
       );
@@ -194,16 +194,16 @@ export default function EventsSection({ mode = "preview" }: EventsSectionProps) 
 
   if (mode === "preview") {
     return (
-      <article className="flex h-full flex-col rounded-3xl border border-amber-100 bg-linear-to-b from-amber-50/80 to-white p-5 shadow-[0_18px_50px_rgba(0,0,0,0.06)] sm:p-6">
+      <article className="flex h-full flex-col rounded-3xl bg-amber-50/65 p-5 sm:p-7">
         <div className="flex items-center justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-black/70">{t("events_section_label")}</p>
-            <h3 className="mt-1 text-xl font-extrabold text-black">
+            <p className="text-xs font-bold uppercase tracking-[0.24em] text-amber-900">{t("events_section_label")}</p>
+            <h3 className="mt-1.5 text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">
               {mode === "preview" ? t("events_section_title_preview") : t("events_section_title_full")}
             </h3>
           </div>
           <div className="flex items-center gap-2">
-            <span className="rounded-full border border-black/10 bg-black px-3 py-1 text-xs font-semibold text-white">
+            <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-950">
               {loading ? t("events_section_loading") : t("events_section_latest")}
             </span>
           </div>
@@ -211,16 +211,16 @@ export default function EventsSection({ mode = "preview" }: EventsSectionProps) 
 
         {error && <div className="mt-4 rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-black/70">{error}</div>}
 
-        <div className="mt-5 space-y-4">
+        <div className="mt-5 border-t border-stone-200/80">
           {loading
             ? Array.from({ length: 3 }).map((_, index) => <LoadingCard key={`preview-loading-${index}`} mode="preview" />)
             : items.length
               ? items.slice(0, 3).map(renderCard)
-              : !error && <p className="rounded-2xl border border-dashed border-amber-200 bg-white px-5 py-8 text-sm text-slate-600">{t("events_section_empty")}</p>}
+              : !error && <p className="py-8 text-sm text-slate-600">{t("events_section_empty")}</p>}
         </div>
 
         <div className="mt-auto flex justify-end pt-5">
-          <Link href={`/${locale}/events`} className="rounded-full border border-amber-200 bg-white px-4 py-2 text-sm font-semibold text-amber-900 transition hover:border-amber-700 hover:bg-amber-700 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600">
+          <Link href={`/${locale}/events`} className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-amber-950 transition hover:bg-amber-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-800">
             {t("events_section_all")}
           </Link>
         </div>

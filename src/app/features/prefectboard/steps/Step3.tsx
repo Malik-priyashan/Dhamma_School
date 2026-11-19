@@ -16,6 +16,19 @@ export default function Step3({ data, onChange }: StepProps) {
 
   return (
     <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm space-y-4">
+      <section className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-5 shadow-sm sm:p-6">
+        <h3 className="text-lg font-semibold text-emerald-950">
+          {t('prefect_board_studentDeclarationTitle')}
+        </h3>
+        <p className="mt-3 text-base leading-8 text-slate-800">
+          {t('prefect_board_studentDeclarationBeforeName')}
+          <span className="inline-block min-w-40 max-w-full break-words border-b-2 border-dotted border-emerald-700 px-1 text-center font-semibold text-emerald-950">
+            {data.fullName?.trim() || '........................'}
+          </span>
+          {t('prefect_board_studentDeclarationText')}
+        </p>
+      </section>
+
       <div>
         <label className="flex items-start gap-3">
           <input required aria-required="true" type="checkbox" name="studentAgreement" checked={!!data.studentAgreement} onChange={handleChange} className="mt-1" />
@@ -25,6 +38,15 @@ export default function Step3({ data, onChange }: StepProps) {
           </div>
         </label>
       </div>
+
+      <section className="rounded-2xl border border-amber-200 bg-amber-50/70 p-5 shadow-sm sm:p-6">
+        <h3 className="text-lg font-semibold text-amber-950">
+          {t('prefect_board_parentConfirmationTitle')}
+        </h3>
+        <p className="mt-3 text-base leading-8 text-slate-800">
+          {t('prefect_board_parentConfirmationText')}
+        </p>
+      </section>
 
       <div>
         <label className="block">

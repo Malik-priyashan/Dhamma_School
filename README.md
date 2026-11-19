@@ -2,6 +2,8 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
+The footer displays the exact coordinates from the school's shared Google Maps pin and links to that location. To use the Google Maps Embed API, enable it in Google Cloud and set `NEXT_PUBLIC_GOOGLE_MAPS_EMBED_API_KEY` to a browser key restricted to your website and that API. Without a key, the footer uses a Google Maps embed of the same coordinates.
+
 First, run the development server:
 
 ```bash

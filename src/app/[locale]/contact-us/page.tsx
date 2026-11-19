@@ -534,19 +534,23 @@ export default function ContactUsPage() {
                 </div>
 
                 <div className="mt-6 grid gap-3 md:grid-cols-2">
-                  <a href="mailto:info@dhammaschool.lk" className="group rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 transition hover:border-sky-200 hover:bg-sky-50">
+                  <a href="mailto:sirisumanathissadhammaschoolm@gmail.com" className="group rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 transition hover:border-sky-200 hover:bg-sky-50">
                     <div className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">{t("contact_us_email")}</div>
-                    <div className="mt-1 text-sm font-semibold text-slate-800">info@dhammaschool.lk</div>
+                    <div className="mt-1 break-all text-sm font-semibold text-slate-800">sirisumanathissadhammaschoolm@gmail.com</div>
                   </a>
-                  <a href="tel:+94770000000" className="group rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 transition hover:border-sky-200 hover:bg-sky-50">
+                  <a href="tel:+94761002898" className="group rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 transition hover:border-sky-200 hover:bg-sky-50">
                     <div className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">{t("contact_us_phone")}</div>
-                    <div className="mt-1 text-sm font-semibold text-slate-800">+94 77 000 0000</div>
+                    <div className="mt-1 text-sm font-semibold text-slate-800">0761002898</div>
                   </a>
-                  <a href="https://youtube.com" target="_blank" rel="noreferrer" className="group rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 transition hover:border-sky-200 hover:bg-sky-50">
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 md:col-span-2">
+                    <div className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">{t("contact_us_address")}</div>
+                    <address className="mt-1 text-sm font-semibold not-italic text-slate-800">Sri Pushparama Temple, Elawella Road, Matara</address>
+                  </div>
+                  <a href="https://www.youtube.com/channel/UCV7toQqmX3zL8pdBeV0Oxcg" target="_blank" rel="noopener noreferrer" className="group rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 transition hover:border-sky-200 hover:bg-sky-50">
                     <div className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">{t("contact_us_youtube")}</div>
                     <div className="mt-1 text-sm font-semibold text-slate-800">YouTube</div>
                   </a>
-                  <a href="https://facebook.com" target="_blank" rel="noreferrer" className="group rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 transition hover:border-sky-200 hover:bg-sky-50">
+                  <a href="https://www.facebook.com/share/18iQa17iMa/?mibextid=wwXIfr" target="_blank" rel="noopener noreferrer" className="group rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 transition hover:border-sky-200 hover:bg-sky-50">
                     <div className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">{t("contact_us_facebook")}</div>
                     <div className="mt-1 text-sm font-semibold text-slate-800">Facebook</div>
                   </a>
