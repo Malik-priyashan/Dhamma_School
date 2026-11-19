@@ -226,7 +226,7 @@ export default function Header() {
 
   return (
     <header className="pointer-events-none fixed inset-x-0 top-4 z-50 sm:top-5">
-      <nav aria-label="Main navigation" className="pointer-events-auto mx-auto w-[calc(100%-1.5rem)] max-w-7xl rounded-[1.75rem] border border-white/80 bg-white/90 px-3 py-2.5 shadow-[0_16px_50px_rgba(15,23,42,0.13)] ring-1 ring-slate-200/70 backdrop-blur-2xl sm:w-[calc(100%-2rem)] sm:px-4 xl:rounded-full xl:px-5">
+      <nav aria-label="Main navigation" className="pointer-events-auto mx-auto w-[calc(100%-1.5rem)] max-w-7xl rounded-[1.75rem] border border-white/80 bg-white/95 px-3 py-2.5 shadow-[0_16px_50px_rgba(15,23,42,0.13)] ring-1 ring-slate-200/70 sm:w-[calc(100%-2rem)] sm:px-4 xl:rounded-full xl:px-5">
         <div className="flex items-center justify-between gap-3 xl:grid xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
           <div className="flex items-center gap-2">
             {/* Mobile menu button */}

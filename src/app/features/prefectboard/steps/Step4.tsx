@@ -40,7 +40,7 @@ export default function Step4({ data, onChange }: StepProps) {
         {previewUrl && (
           <div className="mt-3">
             { }
-            <img src={previewUrl} alt="preview" className="w-36 h-24 object-cover rounded-md border" />
+            <img src={previewUrl} alt={t('prefect_board_libraryConfirmation_preview')} className="w-36 h-24 object-cover rounded-md border" />
           </div>
         )}
         <input ref={fileInputRef} type="file" accept="image/*" name="libraryStatusConfirmationFile" aria-required="false" onChange={(e) => {
@@ -50,6 +50,14 @@ export default function Step4({ data, onChange }: StepProps) {
         }} className="hidden" />
         <div className="text-xs text-slate-500 mt-2">{t('allowed_images_note')}</div>
       </div>
+      <section className="rounded-2xl border border-sky-200 bg-sky-50/70 p-5 shadow-sm sm:p-6">
+        <h3 className="text-lg font-semibold text-sky-950">
+          {t('prefect_board_teacherRecommendationTitle')}
+        </h3>
+        <p className="mt-3 text-base leading-8 text-slate-800">
+          {t('prefect_board_teacherRecommendationText')}
+        </p>
+      </section>
       <div className="mt-4">
         <label className="block text-sm font-medium text-slate-700 mb-1">{t('prefect_board_teachersSign') || "Teacher's sign file upload"}</label>
         <div className="flex flex-wrap items-center gap-3">
@@ -61,7 +69,7 @@ export default function Step4({ data, onChange }: StepProps) {
         {teacherSignPreview && (
           <div className="mt-3">
             { }
-            <img src={teacherSignPreview} alt="preview" className="w-36 h-24 object-cover rounded-md border" />
+            <img src={teacherSignPreview} alt={t('prefect_board_teachersSign_preview')} className="w-36 h-24 object-cover rounded-md border" />
           </div>
         )}
         <input ref={teacherSignRef} type="file" accept="image/*" name="teachersAgreementFileUpload" aria-required="false" onChange={(e) => {

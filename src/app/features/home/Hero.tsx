@@ -10,7 +10,7 @@ export default function Hero() {
 
   return (
     <div className="absolute inset-0 flex min-h-screen items-center justify-center px-4 sm:px-6">
-      <div className="pointer-events-none absolute inset-0 bg-black/18 backdrop-blur-[2px]" />
+      <div className="pointer-events-none absolute inset-0 bg-black/18" />
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.14),transparent_48%)]" />
 
       <div className="relative w-full max-w-5xl translate-y-12 text-center text-white sm:translate-y-14">

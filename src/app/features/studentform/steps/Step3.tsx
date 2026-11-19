@@ -25,8 +25,8 @@ export default function Step3({ data, onChange }: StepProps) {
       </div>
 
       <label className="block">
-        <span className="text-sm font-medium text-black">{t('form.emergencyContact') + ' ' + t('form.address')}</span>
-          <input value={data.emergencyPersonAddress ?? ''} onChange={(e) => onChange('emergencyPersonAddress', e.target.value)} placeholder={t('form.emergencyContact')}
+        <span className="text-sm font-medium text-black">{t('form.emergencyContactAddress')}</span>
+          <input value={data.emergencyPersonAddress ?? ''} onChange={(e) => onChange('emergencyPersonAddress', e.target.value)} placeholder={t('form.emergencyContactAddress')}
           className="mt-1 block w-full rounded-lg border border-black px-3 py-3 shadow-sm bg-white text-black" />
       </label>
 

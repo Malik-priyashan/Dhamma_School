@@ -5,7 +5,7 @@ import { StepProps } from "../types/types";
 import { useTranslations } from "next-intl";
 import { getLatestRegistrationPaymentAmount } from "../api/studentRequestApi";
 
-export default function Step4({ data, onChange }: StepProps) {
+export default function Step4({ data, onChange, onReadRules }: StepProps & { onReadRules: () => void }) {
   const t = useTranslations();
   const [loadingAmt, setLoadingAmt] = useState(false);
 
@@ -70,8 +70,29 @@ export default function Step4({ data, onChange }: StepProps) {
           readOnly
           className={`mt-1 block w-full rounded-lg border border-black px-3 py-3 shadow-sm text-black ${loadingAmt ? 'bg-slate-100 animate-pulse' : 'bg-slate-100 cursor-not-allowed'}`} 
         />
-        {loadingAmt && <p className="text-xs text-slate-500 mt-1">Loading latest fee...</p>}
+        {loadingAmt && <p className="text-xs text-slate-500 mt-1">{t('form.loadingFee')}</p>}
       </label>
+
+      <section className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-5 shadow-sm sm:p-6">
+        <h3 className="text-lg font-semibold text-emerald-950">
+          {t('form.registrationDeclarationTitle')}
+        </h3>
+        <p className="mt-3 text-base leading-8 text-slate-800">
+          {t('form.registrationDeclarationBeforeName')}
+          <span className="inline-block min-w-40 max-w-full break-words border-b-2 border-dotted border-emerald-700 px-1 text-center font-semibold text-emerald-950">
+            {data.nameWithInitials?.trim() || '........................'}
+          </span>
+          {t('form.registrationDeclarationText')}
+        </p>
+      </section>
+
+      <button
+        type="button"
+        onClick={onReadRules}
+        className="inline-flex rounded-lg text-sm font-semibold text-sky-700 underline underline-offset-4 hover:text-sky-900 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-sky-600"
+      >
+        {t('form.readRules')}
+      </button>
 
       <label className="flex items-center gap-2">
         <input type="checkbox" checked={!!data.agreeToTerms} onChange={(e) => onChange('agreeToTerms', e.target.checked)} className="w-4 h-4 border-black" />

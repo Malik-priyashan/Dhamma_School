@@ -59,7 +59,7 @@ export default function LocalePage() {
       {!hideStudentHomeSections && (
         <>
           <main id="home-content" className="w-full px-4 pb-14 pt-6 sm:px-6 lg:px-8">
-            <section className="relative mx-auto max-w-6xl overflow-hidden rounded-4xl border border-slate-200/80 bg-white/90 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl">
+            <section className="relative mx-auto max-w-6xl overflow-hidden rounded-4xl border border-slate-200/80 bg-white/95 shadow-[0_24px_80px_rgba(15,23,42,0.08)]">
               <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.12),transparent_30%),radial-gradient(circle_at_bottom_right,rgba(251,191,36,0.16),transparent_32%)]" />
               <div className="relative px-5 py-6 sm:px-7 sm:py-8 lg:px-10 lg:py-10">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
