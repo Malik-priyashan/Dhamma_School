@@ -21,10 +21,10 @@ async function readAuthResult(res: Response) {
   return result;
 }
 
-export async function sendRegistrationCode(email: string) {
+export async function sendRegistrationCode(email: string, captchaToken: string) {
   return readAuthResult(await fetchAuthResponse('registration-email/send', {
     method: 'POST', credentials: 'include', cache: 'no-store',
-    headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }),
+    headers: { 'Content-Type': 'application/json', 'x-recaptcha-token': captchaToken }, body: JSON.stringify({ email }),
   }));
 }
 
@@ -124,7 +124,7 @@ export async function registerUser(payload: AuthPayload) {
   }
 }
 
-export async function loginUser(payload: AuthPayload) {
+export async function loginUser(payload: AuthPayload, captchaToken: string) {
   try {
     isLoggingOut = false;
     const res = await fetchAuthResponse('login', {
@@ -133,6 +133,7 @@ export async function loginUser(payload: AuthPayload) {
       cache: 'no-store',
       headers: {
         'Content-Type': 'application/json',
+        'x-recaptcha-token': captchaToken,
         ...(typeof navigator !== 'undefined' ? { 'user-agent': navigator.userAgent } : {})
       },
       body: JSON.stringify(payload),

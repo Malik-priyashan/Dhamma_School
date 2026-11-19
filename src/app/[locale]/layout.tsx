@@ -5,6 +5,7 @@ import { NextIntlClientProvider } from "next-intl";
 import Header from "../features/Header";
 import Footer from "../features/Footer";
 import SessionRenewal from "../features/auth/SessionRenewal";
+import RecaptchaBadge from "../features/auth/RecaptchaBadge";
 import { getMessages } from "../../i18n";
 import { defaultLocale } from "../../config";
 
@@ -20,7 +21,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "sirisumanathissadhammaschool",
+    default: "Siri sumanathissa dhamma school",
     template: "%s | sirisumanathissadhammaschool",
   },
   description: "Official website of Siri Sumanathissa Dhamma School.",
@@ -42,6 +43,7 @@ export default async function LocaleLayout({
       <div className={`${geistSans.variable} ${geistMono.variable} h-full antialiased min-h-full flex flex-col`} lang={locale}>
         <Header />
         <SessionRenewal />
+        <RecaptchaBadge />
         {children}
         <Footer />
       </div>
