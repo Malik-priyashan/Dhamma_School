@@ -133,6 +133,7 @@
   "join_us": "Join Us",
   "form": {
     "title": "Student Registration",
+    "languageNote": "සිංහල භාශාවෙන් පෝරමය පූරවන්න",
     "step1": "Personal Details",
     "step2": "Education & Address",
     "step3": "Emergency & Terms",

@@ -12,6 +12,16 @@ const mapSrc = mapsEmbedKey
   ? `https://www.google.com/maps/embed/v1/place?key=${encodeURIComponent(mapsEmbedKey)}&q=${mapQuery}&zoom=17`
   : `https://www.google.com/maps?q=${mapQuery}&z=17&output=embed`;
 
+function FooterArrow() {
+  return (
+    <span aria-hidden="true" className="inline-flex size-5 shrink-0 items-center justify-center rounded-full border border-amber-300/30 bg-amber-300/10 text-amber-300 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-3.5">
+        <path d="M7 17 17 7M8 7h9v9" />
+      </svg>
+    </span>
+  );
+}
+
 export default function Footer() {
   const locale = useLocale();
   const t = useTranslations();
@@ -49,7 +59,7 @@ export default function Footer() {
             <ul className="mt-5 space-y-3.5 text-sm font-medium">
               {links.map((link) => (
                 <li key={link.href}>
-                  <Link href={link.href} className="inline-flex items-center gap-2 transition hover:text-white hover:underline hover:underline-offset-4 focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"><span>{link.label}</span><span aria-hidden="true" className="text-amber-300">↗</span></Link>
+                  <Link href={link.href} className="group inline-flex items-center gap-2.5 transition hover:text-white hover:underline hover:underline-offset-4 focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"><span>{link.label}</span><FooterArrow /></Link>
                 </li>
               ))}
             </ul>
@@ -60,8 +70,8 @@ export default function Footer() {
             <ul className="mt-5 space-y-3.5 text-sm font-medium">
               <li><a href="tel:+94761002898" className="transition hover:text-white hover:underline hover:underline-offset-4 focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">0761002898</a></li>
               <li><a href="mailto:sirisumanathissadhammaschoolm@gmail.com" className="[overflow-wrap:anywhere] transition hover:text-white hover:underline hover:underline-offset-4 focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400">sirisumanathissadhammaschoolm<wbr />@gmail.com</a></li>
-              <li><a href="https://www.facebook.com/share/18iQa17iMa/?mibextid=wwXIfr" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 transition hover:text-white hover:underline hover:underline-offset-4 focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"><span>Facebook</span><span aria-hidden="true" className="text-amber-300">↗</span></a></li>
-              <li><a href="https://www.youtube.com/channel/UCV7toQqmX3zL8pdBeV0Oxcg" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 transition hover:text-white hover:underline hover:underline-offset-4 focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"><span>YouTube</span><span aria-hidden="true" className="text-amber-300">↗</span></a></li>
+              <li><a href="https://www.facebook.com/share/18iQa17iMa/?mibextid=wwXIfr" target="_blank" rel="noopener noreferrer" className="group inline-flex items-center gap-2.5 transition hover:text-white hover:underline hover:underline-offset-4 focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"><span>Facebook</span><FooterArrow /></a></li>
+              <li><a href="https://www.youtube.com/channel/UCV7toQqmX3zL8pdBeV0Oxcg" target="_blank" rel="noopener noreferrer" className="group inline-flex items-center gap-2.5 transition hover:text-white hover:underline hover:underline-offset-4 focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"><span>YouTube</span><FooterArrow /></a></li>
             </ul>
           </div>
 

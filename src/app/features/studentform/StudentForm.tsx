@@ -56,6 +56,7 @@ export default function StudentForm() {
               {t('form.step')} {step} / 4
             </div>
             <h2 className="text-2xl font-black tracking-tight text-slate-950 break-words sm:text-3xl md:text-4xl">{t('form.title')}</h2>
+            <p lang="si" className="mt-2 text-sm font-semibold text-rose-700 sm:text-base">({t('form.languageNote')})</p>
           </div>
 
           <div className="relative mt-6">
